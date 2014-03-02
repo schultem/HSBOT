@@ -15,17 +15,17 @@ screen_box      = (origin[0],origin[1],game_screen_res[0],game_screen_res[1])
 
 ref_game_screen_res       = [1920,1080] #Scale mouse and info coords relative to this reference.
 ref_origin                = [0,0]       #reference origin
-neutral                   = [1920,0]    #nothing
+neutral                   = [1284,894]    #nothing
 
-#scale coords or boxs by the res to reference ratio, use with pair_convert
+#scale coords or boxs by the res to reference ratio, use with pair_convert and add origin offset
 def ref(x):
     conv_ratio_ref  = ref_game_screen_res
     conv_ratio      = game_screen_res
 
     if isinstance(x,list):#2 list
-        return [int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0])),int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1]))]
+        return [int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1]]
     if isinstance(x,tuple):#4 tuple
-        return (int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0])),int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1])),int(x[2]*float(conv_ratio[0])/float(conv_ratio_ref[0])),int(x[3]*float(conv_ratio[1])/float(conv_ratio_ref[1])))
+        return (int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1],int(x[2]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[3]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1])
 
 ###############
 #MOUSE COOORDS#
@@ -94,13 +94,20 @@ state_box =[(0,1037,1920,1080),   #deskop
             (800,785,1130,820),   #opponent_still_choosing
             (1455,435,1640,540),  #player_turn
             (1455,435,1640,540),  #enemy_turn
-            (790,1000,1130,1039)] #end
+            (725,580,1230,720),   #victory
+            (725,580,1230,720),   #defeat
+            (690,703,1283,845)]   #gold
 
 #############
 # CONSTANTS #
 #############
+#1 2 3
+#4 5 6 
+#7 8 9
+DECK_TO_USE = 8
+
 class State:
-    Desktop, Home, Play, Queue, Versus, Select, Wait, Player, Opponent, End = range(0,10)
+    DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT = range(0,11)
 
 state_dict = {
               'desktop':0,
@@ -115,5 +122,7 @@ state_dict = {
               'player_turn_green':7,
               'enemy_turn':8,
               'enemy_turn2':8,
-              'end':9
+              'victory':9,
+              'gold':9,
+              'defeat':10
              }

@@ -8,17 +8,17 @@ import defines
 #HSV ranges of green/red bounding fires that surround playable cards/minions
 lower_green = cv.Scalar(45, 100, 200)
 upper_green = cv.Scalar(80, 255, 255)
-lower_red   = cv.Scalar(10, 130, 240)
-upper_red   = cv.Scalar(35, 255, 255)
+lower_red   = cv.Scalar(0, 130, 240)
+upper_red   = cv.Scalar(20, 255, 255)
 
 H_BINS = 30 #hue
 S_BINS = 32 #saturation
 
-def screen_save(box=defines.screen_box,filename='temp'):
+def screen_save(box=defines.screen_box,filename='temp\\temp'):
     im = ImageGrab.grab(box)
     im.save(os.getcwd() + '\\'+filename+'.png', 'PNG')
 
-def screen_load(filename='temp'):
+def screen_load(filename='temp\\temp'):
     return imread(os.getcwd() + '\\'+filename+'.png')
 
 def calc_histogram(src):
@@ -119,6 +119,7 @@ def get_state(src):
     src = np_to_img(src)
 
     for f in os.listdir(directory):
+        #print f
         box = defines.state_box[defines.state_dict[f[:-4]]]
         emd = calc_emd(src[box[1]:box[3],box[0]:box[2]],cv.LoadImage(directory + f))
         if emd < min_emd:

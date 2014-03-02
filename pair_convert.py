@@ -10,7 +10,7 @@ def convert(x,f):
                pass
         if len(x) != 0:
             for i in xrange(0,len(x)):
-                x[i] = coord_pair_convert(x[i],f)
+                x[i] = convert(x[i],f)
 
     if isinstance(x,tuple):
         if len(x) == 4:
@@ -22,6 +22,6 @@ def convert(x,f):
     if isinstance(x,dict):
         if len(x) != 0:
             for i in xrange(0,len(x)):
-                x[i] = coord_pair_convert(x[i],f)
+                x[i] = convert(x[i],f)
 
     return x

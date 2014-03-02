@@ -41,8 +41,8 @@ def interpCursorPos(coord):
             yd=0
         setCursorPos([coord_curr[0]+xd,coord_curr[1]+yd])
 
-def pause_pensively():
-    time.sleep(1.5)
+def pause_pensively(s):
+    time.sleep(s)
 
 def leftclick_drag_and_release(click_coord, release_coord):
     interpCursorPos(click_coord)
