@@ -15,7 +15,8 @@ screen_box      = (origin[0],origin[1],game_screen_res[0],game_screen_res[1])
 
 ref_game_screen_res       = [1920,1080] #Scale mouse and info coords relative to this reference.
 ref_origin                = [0,0]       #reference origin
-neutral                   = [1284,894]    #nothing
+neutral                   = [1284,894]  #nothing
+neutral_minion            = [911,711]  #nothing while attacking with minions
 
 #scale coords or boxs by the res to reference ratio, use with pair_convert and add origin offset
 def ref(x):
@@ -54,6 +55,7 @@ player_ability            = [1132,826]
 player_deck               = [1622,650]
 opponent_deck             = [1622,335]
 opponent_hand             = [1010,73]
+error                     = [957,576]
 
 #player_minions_even       = {1:[600,600],2:[740,600],3:[880,600],4:[1020,600],5:[1160,600],6:[1300,600]}
 #player_minions_odd        = {1:[530,600],2:[670,600],3:[810,600],4:[950,600],5:[1090,600],6:[1230,600],7:[1510,600]}
@@ -96,7 +98,8 @@ state_box =[(0,1037,1920,1080),   #deskop
             (1455,435,1640,540),  #enemy_turn
             (725,580,1230,720),   #victory
             (725,580,1230,720),   #defeat
-            (690,703,1283,845)]   #gold
+            (690,703,1283,845),   #gold
+            (644,387,1216,510)]   #error
 
 #############
 # CONSTANTS #
@@ -104,10 +107,10 @@ state_box =[(0,1037,1920,1080),   #deskop
 #1 2 3
 #4 5 6 
 #7 8 9
-DECK_TO_USE = 8
+DECKS_TO_USE = 7
 
 class State:
-    DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT = range(0,11)
+    DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR = range(0,12)
 
 state_dict = {
               'desktop':0,
@@ -119,10 +122,13 @@ state_dict = {
               'opponent_still_choosing':6,
               'player_turn':7,
               'player_turn2':7,
+              'player_turn3':7,
               'player_turn_green':7,
               'enemy_turn':8,
               'enemy_turn2':8,
+              'enemy_turn3':8,
               'victory':9,
               'gold':9,
-              'defeat':10
+              'defeat':10,
+              'error':11
              }
