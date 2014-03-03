@@ -26,7 +26,8 @@ def interpCursorPos(coord):
     coord_curr = getCursorPos()
     while(coord_curr[0]!=coord[0] or coord_curr[1]!=coord[1]):        
         coord_curr = getCursorPos()
-        time.sleep(.001)
+        for i in range(0,25000):    #pause
+            i=i+1
         if (coord_curr[0]<coord[0]):
             xd=1
         elif (coord_curr[0]>coord[0]):
