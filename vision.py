@@ -246,11 +246,13 @@ def color_range_mids(src,box,color='green'):
 def color_range_reduced_mids(src,box,color='green',pad=70):
     src_box = src[box[1]:box[3],box[0]:box[2]]
     mask = prepare_mask(src_box,color)
-
     rising_edges,falling_edges = vertical_edges(mask,mask.shape[0]/2)#rising and falling edges of the minions
     mid_edges = get_mid_vertical_edges(rising_edges,falling_edges)#edges of the minions
     if mid_edges != None:
         mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]#translate coords to full screen coords rather than box coords
+    else:
+        mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
+
     return mid_edges
 
 def save_img_box(src,box,filename='temp'):
