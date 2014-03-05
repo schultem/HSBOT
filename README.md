@@ -1,4 +1,4 @@
 HSBOT
 =====
 
-A bot for Hearthstone
+A bot for a computer trading card game.
