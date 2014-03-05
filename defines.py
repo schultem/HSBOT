@@ -56,6 +56,10 @@ player_deck               = [1622,650]
 opponent_deck             = [1622,335]
 opponent_hand             = [1010,73]
 error                     = [957,576]
+play_card_mid             = [950,600]
+hs_startbar_icon          = [338,1058]
+blizzard_startbar_icon    = [290,1060]
+blizzard_hs_play_button   = [277,654]  #1080p, blizzard launcher at 0,0
 
 #player_minions_even       = {1:[600,600],2:[740,600],3:[880,600],4:[1020,600],5:[1160,600],6:[1300,600]}
 #player_minions_odd        = {1:[530,600],2:[670,600],3:[810,600],4:[950,600],5:[1090,600],6:[1230,600],7:[1510,600]}
@@ -85,7 +89,7 @@ player_minions_box          = (415,495,1470,675)
 reduced_player_box          = (917,701,1012,745)
 reduced_ability_box         = (1066,744,1140,766)
 reduced_enemy_minions_box   = (415,316,1470,332)
-reduced_opponent_box        = (900,91,1023,114)
+reduced_opponent_box        = (877,128,913,142)
 
 state_box =[(0,1037,1920,1080),   #deskop
             (684,189,1214,676),   #home
