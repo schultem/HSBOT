@@ -55,6 +55,7 @@ def player():
         logging.info("-------------NEW GAME INFO--------------")
 
     NEW_GAME=False
+    actions.pause_pensively(0.25)
 
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
@@ -75,7 +76,7 @@ def player():
             break
         logging.info("attempt to play card:%s"%(str(player_cards[0])))
         logging.info("position_counter:%s play_attempt_counter:%s"%(0,play_attempt_counter))
-        actions.leftclick_move_and_leftclick(player_cards[0],[950,600])
+        actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card_mid))
         actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(1)
         vision.screen_save()
@@ -117,7 +118,7 @@ def player():
         logging.info("enemy        :%s"%str(enemy))
         logging.info("enemy minions:%s"%str(enemy_minions))
         if enemy != [] and enemy != None:
-            actions.move_and_leftclick(enemy[0])
+            actions.move_and_leftclick(c(defines.opponent_hero))
         elif enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[0])
         actions.move_and_leftclick(c(defines.neutral_minion))
@@ -148,7 +149,7 @@ def player():
         logging.info("enemy        :%s"%str(enemy))
         logging.info("enemy minions:%s"%str(enemy_minions))
         if enemy != [] and enemy != None:
-            actions.move_and_leftclick(enemy[0])
+            actions.move_and_leftclick(c(defines.opponent_hero))
         elif enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[0])
         actions.move_and_leftclick(c(defines.neutral))
@@ -166,7 +167,7 @@ def player():
     logging.info("player minions:%s"%(str(player_minions)))
     logging.info("------PLAY INFO CHECK-------")
 
-    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None:
+    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None or counter == 2:
         logging.info("---END TURN---")
         actions.move_and_leftclick(c(defines.turn_button))
         actions.move_and_leftclick(c(defines.neutral))
@@ -221,6 +222,7 @@ def main():
     logging.info("####################################")
     logging.info("#          NEW SESSION             #")
     logging.info("####################################")
+    desktop_counter = 0
 
     while(True):
         vision.screen_save()
@@ -237,8 +239,18 @@ def main():
         
         states[new_state]()
         if new_state != defines.State.DESKTOP:
+            desktop_counter =0
             actions.move_and_leftclick(c(defines.neutral));
-        actions.pause_pensively(0.1)
+        else:
+            #on the desktop for some reason, try to start the game going again
+            desktop_counter +=1
+            actions.pause_pensively(10)
+            actions.move_and_leftclick(c(defines.hs_startbar_icon));
+            if desktop_counter == 3:
+                actions.move_and_leftclick(c(defines.blizzard_startbar_icon));
+                actions.move_and_leftclick(c(defines.blizzard_hs_play_button));
+                desktop_counter =0
+        actions.pause_pensively(0.05)
         old_state=new_state
 
 if __name__ == '__main__':
