@@ -13,33 +13,20 @@ src = None
 NEW_GAME = False
 
 def desktop():
-    global NEW_GAME
-    NEW_GAME=False
+    pass
 def home():
-    global NEW_GAME
-    NEW_GAME=False
-    logging.info("Clicking PLAY on home screen")
     actions.move_and_leftclick(c(defines.main_menu_play_button))
 def play():
-    global NEW_GAME
-    NEW_GAME=False
-    logging.info("Choosing custom decks")
     actions.move_and_leftclick(c(defines.custom_decks_arrow))
-    deck = randint(1,defines.DECKS_TO_USE)
-    logging.info("Choosing deck %s"%deck)
-    actions.move_and_leftclick(c(defines.deck_locations[deck]))
-    logging.info("Pressing PLAY on play screen")
+    actions.move_and_leftclick(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]])
     actions.move_and_leftclick(c(defines.play_button))
 def queue():
-    global NEW_GAME
-    NEW_GAME=False
+    pass
 def versus():
-    global NEW_GAME
-    NEW_GAME=False
+    pass
 def select():
     global NEW_GAME
     NEW_GAME = True
-    logging.info("Confirm hand cards")
     actions.move_and_leftclick(c(defines.confirm_hand_button))
 def wait():
     pass
@@ -52,128 +39,93 @@ def player():
         logging.info("OPPONENT: %s"%(vision.get_image_info('character',src,c(defines.enemy_box))))
         logging.info("PLAYER  : %s"%(vision.get_image_info('character',src,c(defines.player_box))))
         logging.info("STAGE   : %s"%(vision.get_image_info('stage',src,c(defines.stage_box))))
-        logging.info("-------------NEW GAME INFO--------------")
 
     NEW_GAME=False
-    actions.pause_pensively(0.25)
-
-    player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-    player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
-    player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    player_minions = vision.color_range_mids(src,c(defines.player_minions_box),color='green')
+    actions.pause_pensively(1)
     
-    logging.info("------PLAY INFO-------")
-    logging.info("playable cards:%s"%(str(player_cards)))
-    logging.info("player        :%s"%(str(player_attack)))
-    logging.info("player ability:%s"%(str(player_ability)))
-    logging.info("player minions:%s"%(str(player_minions)))
-    logging.info("------PLAY INFO-------")
+    player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
+    player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
+    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
+    player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
 
-    logging.info("------PLAY CARDS------")
+    #logging.info("------PLAY CARDS------")
     play_attempt_counter=0
     while(player_cards != []):
-        if play_attempt_counter==3:
+        if play_attempt_counter==2:
             break
-        logging.info("attempt to play card:%s"%(str(player_cards[0])))
-        logging.info("position_counter:%s play_attempt_counter:%s"%(0,play_attempt_counter))
         actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card_mid))
         actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(1)
-        vision.screen_save()
-        src = vision.screen_load()
+        src = vision.screen_cap()
         player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-        logging.info("playable cards:%s"%(str(player_cards)))
         play_attempt_counter+=1
-    logging.info("------PLAY CARDS------")
 
-    logging.info("------PLAY ABILITY------")
-    vision.screen_save()
-    src = vision.screen_load()
+    #logging.info("------PLAY ABILITY------")
+    actions.pause_pensively(0.50)
+    src = vision.screen_cap()
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
     if player_ability != [] and player_ability != None:
-        logging.info("Use ability")
         actions.move_and_leftclick(c(defines.player_ability))
         actions.move_and_leftclick(c(defines.neutral))
-    logging.info("------PLAY ABILITY------")
 
-    logging.info("---ATTACK WITH MINIONS---")
-    vision.screen_save()
-    src = vision.screen_load()
+    #logging.info("---ATTACK WITH MINIONS---")
+    src = vision.screen_cap()
     previous_player_minions=[]
-    player_minions = vision.color_range_mids(src,c(defines.player_minions_box),color='green')
-    counter=0
+    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
+    attack_attempt=0 #don't try to attack more than three times with the same minion
     while player_minions != [] and player_minions != None:
         if previous_player_minions == player_minions:
-            if counter==2:
+            if attack_attempt==2:
                 break
-            counter+=1
-        logging.info("Attempt to attack with minion %s"%str(player_minions[0]))
+            attack_attempt+=1
         actions.move_and_leftclick(player_minions[0])
         actions.move_cursor([player_minions[0][0],player_minions[0][1]+130])
-        logging.info("Get opponent attack info")
-        vision.screen_save()
-        src = vision.screen_load()
-        enemy         = vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box),color='red')
+        actions.pause_pensively(0.35)
+        src = vision.screen_cap()
+        enemy=[]
+        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
+        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
         enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
-        logging.info("enemy        :%s"%str(enemy))
-        logging.info("enemy minions:%s"%str(enemy_minions))
         if enemy != [] and enemy != None:
             actions.move_and_leftclick(c(defines.opponent_hero))
         elif enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[0])
         actions.move_and_leftclick(c(defines.neutral_minion))
-        vision.screen_save()
-        src = vision.screen_load()
+        actions.pause_pensively(0.35)
+        src = vision.screen_cap()
         previous_player_minions=player_minions
-        player_minions = vision.color_range_mids(src,c(defines.player_minions_box),color='green')
-        logging.info("player minions:%s"%(str(player_minions)))
-    logging.info("---ATTACK WITH MINIONS---")
+        player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
     
-    logging.info("---ATTACK WITH CHARACTER---")
+    #logging.info("---ATTACK WITH CHARACTER---")
     actions.move_and_leftclick(c(defines.neutral))
-    vision.screen_save()
-    src = vision.screen_load()
+    src = vision.screen_cap()
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
     if player_attack != [] and player_attack != None:
-        logging.info("Attack with player to enemy")
-        logging.info("move to player:%s"%player_attack[0])
         actions.move_and_leftclick(player_attack[0])
         actions.move_cursor([player_attack[0][0],player_attack[0][1]+10])
-        actions.pause_pensively(0.1)
-
-        logging.info("Get opponent attack info")
-        vision.screen_save()
-        src = vision.screen_load()
-        enemy         = vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box),color='red')
+        actions.pause_pensively(0.35)
+        src = vision.screen_cap()
+        enemy=[]
+        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
+        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
         enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
-        logging.info("enemy        :%s"%str(enemy))
-        logging.info("enemy minions:%s"%str(enemy_minions))
         if enemy != [] and enemy != None:
             actions.move_and_leftclick(c(defines.opponent_hero))
         elif enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[0])
         actions.move_and_leftclick(c(defines.neutral))
-    logging.info("---ATTACK WITH CHARACTER---")
     
-    logging.info("------PLAY INFO CHECK-------")
-    vision.screen_save()
-    src = vision.screen_load()
+    #logging.info("------PLAY INFO CHECK-------")
+    src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-    player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    player_minions = vision.color_range_mids(src,c(defines.player_minions_box),color='green')
-    logging.info("playable cards:%s"%(str(player_cards)))
-    logging.info("player ability:%s"%(str(player_ability)))
-    logging.info("player minions:%s"%(str(player_minions)))
-    logging.info("------PLAY INFO CHECK-------")
+    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
 
-    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None or counter == 2:
-        logging.info("---END TURN---")
+    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None or attack_attempt == 2:
+        #logging.info("---END TURN---")
+        actions.move_and_leftclick(c(defines.turn_button))
         actions.move_and_leftclick(c(defines.turn_button))
         actions.move_and_leftclick(c(defines.neutral))
-        actions.move_and_leftclick(c(defines.turn_button))
-        actions.move_and_leftclick(c(defines.neutral))
-        logging.info("---END TURN---")
 
 def opponent():
     global NEW_GAME
@@ -218,25 +170,23 @@ def main():
     global NEW_GAME
     new_state=0
     old_state=0
+    sigs = vision.get_sigs(os.getcwd()+ '\\images\\state\\')
+
     logging.basicConfig(filename='game.log',level=logging.DEBUG)
     logging.info("####################################")
     logging.info("#          NEW SESSION             #")
     logging.info("####################################")
-    desktop_counter = 0
 
+    desktop_counter = 0
     while(True):
-        vision.screen_save()
-        src = vision.screen_load()
-        new_state = defines.state_dict[vision.get_state(src)]
-        logging.info("-------------------------")
-        logging.info("STATE | OLD:%s | NEW:%s |"%(old_state,new_state))
-        logging.info("-------------------------")
-        
+        src = vision.screen_cap()
+
+        new_state = defines.state_dict[vision.get_state(src,sigs)]        
         if new_state == old_state and new_state == defines.State.PLAY:
             #Might have been a connection error.
             actions.move_and_leftclick(c(defines.error));
             actions.move_and_leftclick(c(defines.neutral));
-        
+
         states[new_state]()
         if new_state != defines.State.DESKTOP:
             desktop_counter =0
@@ -250,12 +200,13 @@ def main():
                 actions.move_and_leftclick(c(defines.blizzard_startbar_icon));
                 actions.move_and_leftclick(c(defines.blizzard_hs_play_button));
                 desktop_counter =0
-        actions.pause_pensively(0.05)
         old_state=new_state
 
 if __name__ == '__main__':
     main()
 
+#src = vision.screen_cap()
+#
 #vision.screen_save()
 #src = vision.screen_load()
 #src = vision.imread(os.getcwd() + '\\temp\\attack3.png')
@@ -269,6 +220,6 @@ if __name__ == '__main__':
 #print "playable cards    : ",vision.get_playable_cards(src,defines.hand_box)
 #print "player            : ",vision.color_range_reduced_mids(src,defines.reduced_player_box,color='green')
 #print "player ability    : ",vision.color_range_reduced_mids(src,defines.reduced_ability_box,color='green')
-#print "player minions    : ",vision.color_range_mids(src,defines.player_minions_box,color='green')
+#print "player minions    : ",player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
 #print "enemy             : ",vision.color_range_reduced_mids(src,defines.reduced_opponent_box,color='red')
 #print "enemy minions     : ",vision.color_range_reduced_mids(src,defines.reduced_enemy_minions_box,color='red')
