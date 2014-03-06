@@ -11,8 +11,14 @@ upper_green = cv.Scalar(80, 255, 255)
 lower_red   = cv.Scalar(0, 130, 240)
 upper_red   = cv.Scalar(20, 255, 255)
 
-H_BINS = 30 #hue
-S_BINS = 32 #saturation
+H_BINS = 30
+S_BINS = 32
+
+def screen_cap(box=defines.screen_box):
+    src_PIL = ImageGrab.grab(defines.screen_box)
+    src = np.array(src_PIL) 
+    # Convert RGB to BGR 
+    return src[:, :, ::-1].copy()
 
 def screen_save(box=defines.screen_box,filename='temp\\temp'):
     im = ImageGrab.grab(box)
@@ -70,7 +76,7 @@ def calc_emd(src1,src2):
     numRows = h_bins*s_bins
     
     sig1 = cv.CreateMat(numRows, 3, cv.CV_32FC1)
-    sig2 = cv.CreateMat(numRows, 3, cv.CV_32FC1)    
+    sig2 = cv.CreateMat(numRows, 3, cv.CV_32FC1)
     
     for h in range(h_bins):
         for s in range(s_bins): 
@@ -100,6 +106,56 @@ def calc_min_emd(src,min_directory):
     else:
         return min_f,min_emd
 
+#Earth Movers Distance comparison of histograms, use a precalculated sig of src2
+def calc_emd_pre_calculated_src2(src1,sig2):
+    h_bins = H_BINS
+    s_bins = S_BINS
+
+    hist1= calc_histogram(src1)
+
+    numRows = h_bins*s_bins
+    
+    sig1 = cv.CreateMat(numRows, 3, cv.CV_32FC1)
+
+    for h in range(h_bins):
+        for s in range(s_bins): 
+            bin_val = cv.QueryHistValue_2D(hist1, h, s)
+            cv.Set2D(sig1, h*s_bins+s, 0, cv.Scalar(bin_val))
+            cv.Set2D(sig1, h*s_bins+s, 1, cv.Scalar(h))
+            cv.Set2D(sig1, h*s_bins+s, 2, cv.Scalar(s))
+
+    return cv.CalcEMD2(sig1,sig2,cv.CV_DIST_L2)
+
+#to speed up comparisons calculate the histogram for an image for use later
+def pre_calculate_sig(src2):
+    h_bins = H_BINS
+    s_bins = S_BINS
+
+    hist2= calc_histogram(src2)
+
+    numRows = h_bins*s_bins
+    
+    sig2 = cv.CreateMat(numRows, 3, cv.CV_32FC1)
+    
+    for h in range(h_bins):
+        for s in range(s_bins): 
+    
+            bin_val = cv.QueryHistValue_2D(hist2, h, s)
+            cv.Set2D(sig2, h*s_bins+s, 0, cv.Scalar(bin_val))
+            cv.Set2D(sig2, h*s_bins+s, 1, cv.Scalar(h))
+            cv.Set2D(sig2, h*s_bins+s, 2, cv.Scalar(s))
+    
+    return sig2
+        
+#pre calculate the sigs of a directory and return as a dictionary
+def get_sigs(min_directory):
+    i=0
+    sigs={}
+    for f in os.listdir(min_directory):
+        sigs[f] = pre_calculate_sig(cv.LoadImage(min_directory + f))
+    
+    return sigs
+
 #returns the most likely matching filename in an images directory
 def get_image_info(directory,src,box):
     directory = os.getcwd()+ '\\images\\' + directory + '\\'
@@ -112,7 +168,7 @@ def get_image_info(directory,src,box):
         return None
 
 #returns the most likely matching filename in an images directory
-def get_state(src):
+def get_state(src,sigs):
     directory = os.getcwd()+ '\\images\\state\\'
     min_emd = 9999999.99
     min_f = ''
@@ -121,7 +177,7 @@ def get_state(src):
     for f in os.listdir(directory):
         #print f
         box = defines.state_box[defines.state_dict[f[:-4]]]
-        emd = calc_emd(src[box[1]:box[3],box[0]:box[2]],cv.LoadImage(directory + f))
+        emd = calc_emd_pre_calculated_src2(src[box[1]:box[3],box[0]:box[2]],sigs[f])
         if emd < min_emd:
             min_emd=emd
             min_f = f
@@ -174,7 +230,7 @@ def draw_vertical_lines(src,result):
                 line(result,(x1,y1),(x2,y2),(255,255,255),3)
     return result
 
-def get_playable_cards(src,box,pad=15):
+def get_playable_cards(src,box,pad=18):
     lower_green = cv.Scalar(45, 50, 150)#selects the green glow that surrounds playable cards
     upper_green = cv.Scalar(80, 255, 255)
 
@@ -191,22 +247,17 @@ def get_playable_cards(src,box,pad=15):
     return falling_edges
 
 #return the middle egdes between rising and falling edges
-def get_mid_vertical_edges(rising_edges,falling_edges):
+#with an optional threshold rising to falling edge length
+def get_mid_vertical_edges(rising_edges,falling_edges,threshold=0):
     if len(rising_edges) != len(falling_edges):
         return None
     
     mid_edges=[]
     for i in range(0,len(rising_edges)):
-        mid_edges.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
+        if falling_edges[i][0]-rising_edges[i][0] > threshold:
+            mid_edges.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
     
     return mid_edges
-    
-#return the x center points between a list of x-ordered coordinates
-def get_x_midpoints(mid_edges):
-    midpoints=[]
-    for i in range(0,len(mid_edges)-1):
-        midpoints.append([(mid_edges[i][0]+mid_edges[i+1][0])/2,mid_edges[i][1]])
-    return midpoints
 
 def prepare_mask(src,color='green'):
     hsv1 = cvtColor(src, COLOR_BGR2HSV)
@@ -223,31 +274,12 @@ def prepare_mask(src,color='green'):
 
     return dilation
 
-def color_range_mids(src,box,color='green'):
-    src_box = src[box[1]:box[3],box[0]:box[2]]
-    mask = prepare_mask(src_box,color)
-
-    rising_edges,falling_edges = vertical_edges(mask,mask.shape[0]/2)#rising and falling edges of the minions
-    mid_edges = get_mid_vertical_edges(rising_edges,falling_edges)#edges of the minions
-    if mid_edges != None:
-        mids  = get_x_midpoints(mid_edges)#center of the minions
-        #verify that a center of a minion is playable by checking that the edges are connected
-        verified_mids = []
-        for i in range(0,len(mids)):
-            rising_edges,falling_edges = horizontal_edges(mask,mids[i][0])
-            if len(rising_edges) != 0 or len(falling_edges) != 0:
-                verified_mids.append(mids[i])
-        
-        verified_mids = [[x+box[0],y+box[1]] for [x,y] in verified_mids]#translate coords to full screen coords rather than box coords
-        return verified_mids
-    else:
-        return None
-
-def color_range_reduced_mids(src,box,color='green',pad=70):
+#Find occurrences of a color across a horizontal strip, add y-pad to the returned coordinates
+def color_range_reduced_mids(src,box,color='green',pad=50,threshold=0):
     src_box = src[box[1]:box[3],box[0]:box[2]]
     mask = prepare_mask(src_box,color)
     rising_edges,falling_edges = vertical_edges(mask,mask.shape[0]/2)#rising and falling edges of the minions
-    mid_edges = get_mid_vertical_edges(rising_edges,falling_edges)#edges of the minions
+    mid_edges = get_mid_vertical_edges(rising_edges,falling_edges,threshold)#edges of the minions
     if mid_edges != None:
         mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]#translate coords to full screen coords rather than box coords
     else:
