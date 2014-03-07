@@ -33,15 +33,16 @@ def wait():
 def player():
     global src
     global NEW_GAME
-    
+    actions.pause_pensively(1)
+
     if NEW_GAME:
         logging.info("-------------NEW GAME INFO--------------")
         logging.info("OPPONENT: %s"%(vision.get_image_info('character',src,c(defines.enemy_box))))
         logging.info("PLAYER  : %s"%(vision.get_image_info('character',src,c(defines.player_box))))
-        logging.info("STAGE   : %s"%(vision.get_image_info('stage',src,c(defines.stage_box))))
+        #logging.info("STAGE   : %s"%(vision.get_image_info('stage',src,c(defines.stage_box))))
 
     NEW_GAME=False
-    actions.pause_pensively(1)
+    
     
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
@@ -90,8 +91,10 @@ def player():
             actions.move_and_leftclick(c(defines.opponent_hero))
         elif enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[0])
+        else:
+            actions.pause_pensively(3)
         actions.move_and_leftclick(c(defines.neutral_minion))
-        actions.pause_pensively(0.35)
+        actions.pause_pensively(0.50)
         src = vision.screen_cap()
         previous_player_minions=player_minions
         player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
@@ -128,21 +131,14 @@ def player():
         actions.move_and_leftclick(c(defines.neutral))
 
 def opponent():
-    global NEW_GAME
-    NEW_GAME=False
+    pass
 def victory():
-    global NEW_GAME
-    NEW_GAME=False
     logging.info("Victory: Clicking to skip end game results")
     actions.move_and_leftclick(c(defines.neutral))
 def defeat():
-    global NEW_GAME
-    NEW_GAME=False
     logging.info("Defeat: Clicking to skip end game results")
     actions.move_and_leftclick(c(defines.neutral))
 def error():
-    global NEW_GAME
-    NEW_GAME=False
     logging.info("Error: Clicking OK in error message")
     actions.move_and_leftclick(c(defines.error))
 
