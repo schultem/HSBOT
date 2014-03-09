@@ -157,25 +157,27 @@ def get_sigs(min_directory):
     return sigs
 
 #returns the most likely matching filename in an images directory
-def get_image_info(directory,src,box):
-    directory = os.getcwd()+ '\\images\\' + directory + '\\'
-    src = np_to_img(src)
+def get_image_info(src,sigs,box):
+    min_emd = 9999999.99
+    min_f = ''
 
-    min_f,_ = calc_min_emd(src[box[1]:box[3],box[0]:box[2]],directory)
-    if min_f !=None:
-        return min_f[:-4]
-    else:
-        return None
+    src = np_to_img(src)
+    src_box = src[box[1]:box[3],box[0]:box[2]]
+
+    for f in sigs:
+        emd = calc_emd_pre_calculated_src2(src_box,sigs[f])
+        if emd < min_emd:
+            min_emd=emd
+            min_f = f
+    return min_f[:-4]
 
 #returns the most likely matching filename in an images directory
 def get_state(src,sigs):
-    directory = os.getcwd()+ '\\images\\state\\'
     min_emd = 9999999.99
     min_f = ''
     src = np_to_img(src)
 
-    for f in os.listdir(directory):
-        #print f
+    for f in sigs:
         box = defines.state_box[defines.state_dict[f[:-4]]]
         emd = calc_emd_pre_calculated_src2(src[box[1]:box[3],box[0]:box[2]],sigs[f])
         if emd < min_emd:
@@ -230,7 +232,7 @@ def draw_vertical_lines(src,result):
                 line(result,(x1,y1),(x2,y2),(255,255,255),3)
     return result
 
-def get_playable_cards(src,box,pad=18):
+def get_playable_cards(src,box,pad=20):
     lower_green = cv.Scalar(45, 50, 150)#selects the green glow that surrounds playable cards
     upper_green = cv.Scalar(80, 255, 255)
 
