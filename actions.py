@@ -1,6 +1,7 @@
-import win32api, win32con
+import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
+import pw
 
 def leftClick():
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
@@ -63,6 +64,77 @@ def move_and_leftclick(click_coord):
 
 def move_cursor(move_coord):
     interpCursorPos(move_coord)
+
+def get_whndl(window_name):
+    whndl = win32gui.FindWindowEx(0, 0, None, window_name)
+    return whndl
+
+def make_pycwnd(hwnd):       
+    PyCWnd = win32ui.CreateWindowFromHandle(hwnd)
+    return PyCWnd
+
+def pycwnd_click(pycwnd,coord):
+    lParam = coord[1] << 16 | coord[0]
+    pycwnd.PostMessage(win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam);
+    pause_pensively(0.1)
+    pycwnd.PostMessage(win32con.WM_LBUTTONUP, 0, lParam);
+    pause_pensively(0.1)
+
+def foreground_whndl(whwnd):
+    win32gui.SetForegroundWindow(whwnd)
+
+def pycwnd_string(pycwnd, msg):
+    for c in msg:
+        if c == "\n":
+            pycwnd.SendMessage(win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+            pycwnd.SendMessage(win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+        else:
+            pause_pensively(0.3)
+            pycwnd.SendMessage(win32con.WM_CHAR, ord(c), 0)
+    #pycwnd.UpdateWindow()
+
+def whnds_to_text(hwnds):
+    for hwnd in range(0,len(hwnds)):
+        hwnds[hwnd]=win32gui.GetWindowText(hwnds[hwnd])
+    return hwnds
+
+def restart_game():
+    def callback (hwnd, hwnds):
+        hwnds.append(hwnd)
+        return True
+
+    pause_pensively(1)
+    whndl =  get_whndl("Hearthstone")
+    if whndl != None and whndl != 0:
+        win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
+        pause_pensively(5)
+    else:
+        whndl  = get_whndl("Battle.net")
+        if whndl != None and whndl != 0:
+            #prepare battlenet window for input
+            win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
+            foreground_whndl(whndl)
+            pycwnd = make_pycwnd(whndl)
+
+            #try to log on again
+            pycwnd_click(pycwnd,defines.c(defines.bnet_go_online_button))
+            whndl_login = get_whndl("Battle.net Login")
+            if whndl_login != None and whndl_login != 0:
+                #prepare battlenet login window for input
+                pycwnd_login = make_pycwnd(whndl_login)
+                pycwnd_string(pycwnd_login,pw.pw)
+                pycwnd_click(pycwnd_login,defines.bnet_accept_pw_button)
+                pause_pensively(5)
+
+            #try to start the game
+            pycwnd_click(pycwnd,defines.c(defines.bnet_hearthstone_button))
+            pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
+            pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
+            
+            #get battlenet out of the way
+            pause_pensively(5)
+            win32gui.ShowWindow(whndl, win32con.SW_MINIMIZE)
+            pause_pensively(5)
 
 def main():
     pass
