@@ -175,8 +175,7 @@ def main():
     logging.info("####################################")
     logging.info("#          NEW SESSION             #")
     logging.info("####################################")
-    
-    desktop_counter = 0
+
     while(True):
         src = vision.screen_cap()
         new_state = defines.state_dict[vision.get_state(src,state_sigs)]    
