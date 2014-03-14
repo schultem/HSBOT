@@ -28,6 +28,11 @@ def ref(x):
     if isinstance(x,tuple):#4 tuple
         return (int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1],int(x[2]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[3]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1])
 
+#A shorter function name to scale coords to the desired screen resolution
+def c(var):
+    new = var
+    return convert(var,ref)
+
 ###############
 #MOUSE COOORDS#
 ###############
@@ -59,9 +64,10 @@ error                     = [957,576]
 play_card_left            = [400,600]
 play_card_right           = [1470,600]
 play_card                 = [[1470,600],[400,600]]
-hs_startbar_icon          = [338,1058]
-blizzard_startbar_icon    = [290,1060]
-blizzard_hs_play_button   = [277,654]  #1080p, blizzard launcher at 0,0
+bnet_hearthstone_button   = [55,520]
+bnet_play_button          = [282,966]
+bnet_go_online_button     = [1820,60]
+bnet_accept_pw_button     = [100,290]
 
 ############
 # INFO BOX #
@@ -98,7 +104,7 @@ state_box =[(0,1037,1920,1080),   #deskop
 #0 1 2
 #3 4 5 
 #6 7 8
-DECKS_TO_USE = [0,1,2,3,4,5,6]
+DECKS_TO_USE = [0,1,2]
 
 class State:
     DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR = range(0,12)
