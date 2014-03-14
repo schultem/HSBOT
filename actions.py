@@ -103,11 +103,11 @@ def restart_game():
         hwnds.append(hwnd)
         return True
 
-    pause_pensively(1)
+    pause_pensively(30)
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
         win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
-        pause_pensively(5)
+        pause_pensively(10)
     else:
         whndl  = get_whndl("Battle.net")
         if whndl != None and whndl != 0:
@@ -134,7 +134,7 @@ def restart_game():
             #get battlenet out of the way
             pause_pensively(5)
             win32gui.ShowWindow(whndl, win32con.SW_MINIMIZE)
-            pause_pensively(5)
+            pause_pensively(30)
 
 def main():
     pass
