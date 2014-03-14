@@ -4,8 +4,6 @@ import defines
 import logging
 from random import randint
 import os
-import win32gui
-import win32con
 
 src = None
 state_sigs = None
@@ -24,7 +22,7 @@ def home():
     actions.move_and_leftclick(c(defines.main_menu_play_button))
 def play():
     actions.move_and_leftclick(c(defines.custom_decks_arrow))
-    actions.move_and_leftclick(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]])
+    actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
     actions.move_and_leftclick(c(defines.play_button))
 def queue():
     pass
@@ -44,8 +42,8 @@ def player():
 
     if NEW_GAME:
         logging.info("-------------NEW GAME INFO--------------")
-        logging.info("OPPONENT: %s"%(vision.get_image_info(src,character_sigs,c(defines.enemy_box))))
-        logging.info("PLAYER:   %s"%(vision.get_image_info(src,character_sigs,c(defines.player_box))))
+        #logging.info("OPPONENT: %s"%(vision.get_image_info(src,character_sigs,c(defines.enemy_box))))
+        #logging.info("PLAYER:   %s"%(vision.get_image_info(src,character_sigs,c(defines.player_box))))
         #logging.info("STAGE:    %s"%(vision.get_image_info(src,stage_sigs,c(defines.stage_box))))
         NEW_GAME=False
 
@@ -168,8 +166,6 @@ def main():
     global NEW_GAME
     new_state=0
     old_state=0
-    def _window_callback(hwnd, all_windows):
-        all_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
 
     state_sigs = vision.get_sigs(os.getcwd()+ '\\images\\state\\')
     character_sigs = vision.get_sigs(os.getcwd()+ '\\images\\character\\')
@@ -179,32 +175,23 @@ def main():
     logging.info("####################################")
     logging.info("#          NEW SESSION             #")
     logging.info("####################################")
-
+    
     desktop_counter = 0
     while(True):
         src = vision.screen_cap()
-    
         new_state = defines.state_dict[vision.get_state(src,state_sigs)]    
-     
         if new_state == old_state and new_state == defines.State.PLAY:
             #Might have been a connection error.
-            actions.move_and_leftclick(c(defines.error));
-            actions.move_and_leftclick(c(defines.neutral));
+            actions.move_and_leftclick(c(defines.error))
+            actions.move_and_leftclick(c(defines.neutral))
     
         states[new_state]()
         if new_state != defines.State.DESKTOP:
-            actions.move_and_leftclick(c(defines.neutral));
+            actions.move_and_leftclick(c(defines.neutral))
         else:
             #on the desktop for some reason, try to start the game or reshow the window if it's already running
-            actions.pause_pensively(10)
-            hwnd =  win32gui.FindWindow(0, "Hearthstone")
-            if hwnd != None and hwnd != 0:
-                win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-                actions.pause_pensively(5)
-            else:
-                actions.move_and_leftclick(c(defines.blizzard_hs_play_button));
-                actions.pause_pensively(10)
-            
+            actions.restart_game()
+
         old_state=new_state
 
 if __name__ == '__main__':
