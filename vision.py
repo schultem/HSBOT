@@ -233,9 +233,6 @@ def draw_vertical_lines(src,result):
     return result
 
 def get_playable_cards(src,box,pad=20):
-    lower_green = cv.Scalar(45, 50, 150)#selects the green glow that surrounds playable cards
-    upper_green = cv.Scalar(80, 255, 255)
-
     src_box = src[box[1]:box[3],box[0]:box[2]]
     gray = cvtColor(src_box,COLOR_BGR2GRAY)
     result = inRange(gray,0, 0)
