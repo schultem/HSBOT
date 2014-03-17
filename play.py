@@ -72,7 +72,7 @@ def player():
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
     previous_player_minions=[]
-    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
+    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     while player_minions != [] and player_minions != None:
         p_m = randint(0,len(player_minions)-1) #attack with a random minion
         actions.move_and_leftclick(player_minions[p_m])
@@ -97,7 +97,7 @@ def player():
         actions.pause_pensively(0.50)
         src = vision.screen_cap()
         previous_player_minions=player_minions
-        player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
+        player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     
     #logging.info("---ATTACK WITH CHARACTER---")
     actions.move_and_leftclick(c(defines.neutral))
@@ -119,10 +119,11 @@ def player():
         actions.move_and_leftclick(c(defines.neutral))
     
     #logging.info("------PLAY INFO CHECK-------")
+    actions.pause_pensively(1)
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',threshold=45)
+    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
 
     if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None:
         #logging.info("---END TURN---")
@@ -175,10 +176,13 @@ def main():
     logging.info("####################################")
     logging.info("#          NEW SESSION             #")
     logging.info("####################################")
-
+    
     while(True):
         src = vision.screen_cap()
-        new_state = defines.state_dict[vision.get_state(src,state_sigs)]    
+        
+        state_name = vision.get_state(src,state_sigs)
+        new_state  = defines.state_dict[state_name]
+
         if new_state == old_state and new_state == defines.State.PLAY:
             #Might have been a connection error.
             actions.move_and_leftclick(c(defines.error))
@@ -190,7 +194,7 @@ def main():
         else:
             #on the desktop for some reason, try to start the game or reshow the window if it's already running
             actions.restart_game()
-
+    
         old_state=new_state
 
 if __name__ == '__main__':
