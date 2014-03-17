@@ -1,7 +1,7 @@
 import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
-import pw
+from pw import pw
 
 def leftClick():
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
@@ -99,11 +99,7 @@ def whnds_to_text(hwnds):
     return hwnds
 
 def restart_game():
-    def callback (hwnd, hwnds):
-        hwnds.append(hwnd)
-        return True
-
-    pause_pensively(30)
+    pause_pensively(10)
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
         win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
@@ -122,19 +118,18 @@ def restart_game():
             if whndl_login != None and whndl_login != 0:
                 #prepare battlenet login window for input
                 pycwnd_login = make_pycwnd(whndl_login)
-                pycwnd_string(pycwnd_login,pw.pw)
+                pycwnd_string(pycwnd_login,pw)
                 pycwnd_click(pycwnd_login,defines.bnet_accept_pw_button)
                 pause_pensively(5)
 
             #try to start the game
             pycwnd_click(pycwnd,defines.c(defines.bnet_hearthstone_button))
             pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
-            pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
-            
+
             #get battlenet out of the way
             pause_pensively(5)
             win32gui.ShowWindow(whndl, win32con.SW_MINIMIZE)
-            pause_pensively(30)
+            pause_pensively(15)
 
 def main():
     pass
