@@ -163,7 +163,6 @@ def get_image_info(src,sigs,box):
 
     src = np_to_img(src)
     src_box = src[box[1]:box[3],box[0]:box[2]]
-
     for f in sigs:
         emd = calc_emd_pre_calculated_src2(src_box,sigs[f])
         if emd < min_emd:
@@ -178,7 +177,7 @@ def get_state(src,sigs):
     src = np_to_img(src)
 
     for f in sigs:
-        box = defines.state_box[defines.state_dict[f[:-4]]]
+        box = defines.c(defines.state_box[defines.state_dict[f[:-4]]])
         emd = calc_emd_pre_calculated_src2(src[box[1]:box[3],box[0]:box[2]],sigs[f])
         if emd < min_emd:
             min_emd=emd
@@ -239,24 +238,31 @@ def get_playable_cards(src,box,pad=20):
     hsv1 = cvtColor(src_box, COLOR_BGR2HSV)
     mask = inRange(hsv1,lower_green, upper_green)
     lines = draw_vertical_lines(mask,result)
-    
-    _,falling_edges = vertical_edges(lines,lines.shape[0]/2)
+    kernel = np.ones((4,4),np.uint8)
+    opening = morphologyEx(lines, MORPH_OPEN, kernel)
+
+    _,falling_edges = vertical_edges(opening,opening.shape[0]/2)
     falling_edges = [[x+box[0]+pad,y+box[1]] for [x,y] in falling_edges]#translate coords to full screen coords rather than box coords
-    
     return falling_edges
 
 #return the middle egdes between rising and falling edges
 #with an optional threshold rising to falling edge length
-def get_mid_vertical_edges(rising_edges,falling_edges,threshold=0):
+def get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=0,max_threshold=200):
     if len(rising_edges) != len(falling_edges):
         return None
-    
+
     mid_edges=[]
+    #mid_edges_min=[]
+    #mid_edges_max=[]
     for i in range(0,len(rising_edges)):
-        if falling_edges[i][0]-rising_edges[i][0] > threshold:
-            mid_edges.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
-    
-    return mid_edges
+        if falling_edges[i][0]-rising_edges[i][0] > min_threshold:
+            if falling_edges[i][0]-rising_edges[i][0] < max_threshold:
+                mid_edges.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
+        #    else:
+        #        mid_edges_max.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
+        #else:
+        #    mid_edges_min.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
+    return mid_edges#,mid_edges_min,mid_edges_max
 
 def prepare_mask(src,color='green'):
     hsv1 = cvtColor(src, COLOR_BGR2HSV)
@@ -274,17 +280,18 @@ def prepare_mask(src,color='green'):
     return dilation
 
 #Find occurrences of a color across a horizontal strip, add y-pad to the returned coordinates
-def color_range_reduced_mids(src,box,color='green',pad=50,threshold=0):
+def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_threshold=99999):
     src_box = src[box[1]:box[3],box[0]:box[2]]
     mask = prepare_mask(src_box,color)
     rising_edges,falling_edges = vertical_edges(mask,mask.shape[0]/2)#rising and falling edges of the minions
-    mid_edges = get_mid_vertical_edges(rising_edges,falling_edges,threshold)#edges of the minions
+    mid_edges= get_mid_vertical_edges(rising_edges,falling_edges,min_threshold,max_threshold)#edges of the minions
     if mid_edges != None:
         mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]#translate coords to full screen coords rather than box coords
+        #mid_edges_min = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges_min]
+        #mid_edges_max = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges_max]
     else:
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
-
-    return mid_edges
+    return mid_edges#,mid_edges_min,mid_edges_max
 
 def save_img_box(src,box,filename='temp'):
     src_box = src[box[1]:box[3],box[0]:box[2]]
