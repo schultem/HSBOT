@@ -149,13 +149,76 @@ def pre_calculate_sig(src2):
         
 #pre calculate the sigs of a directory and return as a dictionary
 def get_sigs(min_directory):
-    i=0
     sigs={}
     for f in os.listdir(min_directory):
         sigs[f] = pre_calculate_sig(cv.LoadImage(min_directory + f))
     
     return sigs
 
+#pre calculate the descreiptors of a directory and return as a dictionary
+def get_des(min_directory):
+    sift = SIFT()
+    descriptors={}
+    for f in os.listdir(min_directory):
+        _, des = sift.detectAndCompute(imread(min_directory + f),None)
+        descriptors[f] = des
+
+    return descriptors
+
+def pre_calculate_des(img_directory):
+    # Initiate SIFT detector
+    sift = SIFT()
+    _, des2 = sift.detectAndCompute(img2,None)
+    return des2
+
+#provide two images and a minimum match count, return true for match, false for no match
+def calc_sift(img1,img2):
+    # Initiate SIFT detector
+    sift = SIFT()
+    
+    # find the keypoints and descriptors with SIFT
+    _, des1 = sift.detectAndCompute(img1,None)
+    _, des2 = sift.detectAndCompute(img2,None)
+    
+    FLANN_INDEX_KDTREE = 0
+    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+    search_params = dict(checks = 50)
+    
+    flann = FlannBasedMatcher(index_params, search_params)
+    matches = flann.knnMatch(des1,des2,k=2)
+    
+    # store all the good matches as per Lowe's ratio test.
+    good = []
+    for m,n in matches:
+        if m.distance < 0.7*n.distance:
+            good.append(m)
+    
+    return len(good)
+    
+#provide two images and a minimum match count, return true for match, false for no match
+def calc_sift_precaculated_src2(src1,des2):
+    # Initiate SIFT detector
+    sift = SIFT()
+    
+    # find the keypoints and descriptors with SIFT
+    _, des1 = sift.detectAndCompute(src1,None)
+
+    FLANN_INDEX_KDTREE = 0
+    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+    search_params = dict(checks = 50)
+    
+    flann = FlannBasedMatcher(index_params, search_params)
+    matches = flann.knnMatch(des1,des2,k=2)
+    
+    # store all the good matches as per Lowe's ratio test.
+    good = []
+    for m,n in matches:
+        if m.distance < 0.7*n.distance:
+            good.append(m)
+    
+    return len(good)
+
+    
 #returns the most likely matching filename in an images directory
 def get_image_info(src,sigs,box):
     min_emd = 9999999.99
@@ -183,6 +246,22 @@ def get_state(src,sigs):
             min_emd=emd
             min_f = f
     return min_f[:-4]
+
+#returns the most likely matching filename in an images directory
+def get_state_sift(src,descs):
+    max_good = 0
+    max_f = None
+
+    for f in descs:
+        box = defines.c(defines.state_box[defines.state_dict[f[:-4]]])
+        good = calc_sift_precaculated_src2(src[box[1]:box[3],box[0]:box[2]],descs[f])
+        if good > max_good:
+            max_good=good
+            max_f = f
+    if max_f != None:
+        return max_f[:-4]
+    else:
+        return None
 
 #detect rising and falling edges across a binary image at y
 def vertical_edges(image,y=None):
