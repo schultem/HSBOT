@@ -68,6 +68,7 @@ bnet_hearthstone_button   = [55,520]
 bnet_play_button          = [282,966]
 bnet_go_online_button     = [1820,60]
 bnet_accept_pw_button     = [100,290]
+bnet_launch_error_button  = [60,120]
 
 ############
 # INFO BOX #
