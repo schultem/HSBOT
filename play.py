@@ -9,6 +9,9 @@ src = None
 state_sigs = None
 character_sigs = None
 stage_sigs = None
+state_descs = None
+character_descs = None
+stage_descs = None
 
 ###############
 #    FLAGS    #
@@ -36,12 +39,12 @@ def select():
 def wait():
     pass
 def player():
-    global src,character_sigs,stage_sigs
+    #global src,character_descs,stage_descs
     global NEW_GAME
     actions.pause_pensively(1)
 
     if NEW_GAME:
-        logging.info("-------------NEW GAME INFO--------------")
+        #logging.info("-------------NEW GAME INFO--------------")
         #logging.info("OPPONENT: %s"%(vision.get_image_info(src,character_sigs,c(defines.enemy_box))))
         #logging.info("PLAYER:   %s"%(vision.get_image_info(src,character_sigs,c(defines.player_box))))
         #logging.info("STAGE:    %s"%(vision.get_image_info(src,stage_sigs,c(defines.stage_box))))
@@ -134,10 +137,10 @@ def player():
 def opponent():
     pass
 def victory():
-    logging.info("Victory: Clicking to skip end game results")
+    logging.info("Victory")
     actions.move_and_leftclick(c(defines.neutral))
 def defeat():
-    logging.info("Defeat: Clicking to skip end game results")
+    logging.info("Defeat")
     actions.move_and_leftclick(c(defines.neutral))
 def error():
     logging.info("Error: Clicking OK in error message")
@@ -163,36 +166,39 @@ def c(var):
     return defines.convert(var,defines.ref)
 
 def main():
-    global src,character_sigs,state_sigs,stage_sigs
+    global src,character_descs,state_descs,stage_descs
     global NEW_GAME
     new_state=0
     old_state=0
 
-    state_sigs = vision.get_sigs(os.getcwd()+ '\\images\\state\\')
-    character_sigs = vision.get_sigs(os.getcwd()+ '\\images\\character\\')
-    #stage_sigs = vision.get_sigs(os.getcwd()+ '\\images\\stage\\')
+    state_descs = vision.get_des(os.getcwd()+ '\\images\\state\\')
 
     logging.basicConfig(filename='game.log',level=logging.DEBUG)
-    logging.info("####################################")
-    logging.info("#          NEW SESSION             #")
-    logging.info("####################################")
-    
+
     while(True):
         src = vision.screen_cap()
         
-        state_name = vision.get_state(src,state_sigs)
-        new_state  = defines.state_dict[state_name]
-
+        state_name = vision.get_state_sift(src,state_descs)
+        if state_name != None:
+            new_state  = defines.state_dict[state_name]
+        else:
+            new_state=defines.State.DESKTOP
+        print new_state
         if new_state == old_state and new_state == defines.State.PLAY:
             #Might have been a connection error.
             actions.move_and_leftclick(c(defines.error))
             actions.move_and_leftclick(c(defines.neutral))
-    
-        states[new_state]()
+        
+        #check if Hearthstone is running
+        if actions.check_game() == False:
+            new_state=defines.State.DESKTOP
+
         if new_state != defines.State.DESKTOP:
+            states[new_state]()
             actions.move_and_leftclick(c(defines.neutral))
         else:
             #on the desktop for some reason, try to start the game or reshow the window if it's already running
+            actions.pause_pensively(10)
             actions.restart_game()
     
         old_state=new_state
