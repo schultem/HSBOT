@@ -14,6 +14,7 @@ upper_red   = cv.Scalar(20, 255, 255)
 H_BINS = 30
 S_BINS = 32
 
+#Default to take a screenshot of the whole screen
 def screen_cap(box=defines.screen_box):
     src_PIL = ImageGrab.grab(defines.screen_box)
     src = np.array(src_PIL) 
@@ -156,7 +157,7 @@ def get_sigs(min_directory):
     return sigs
 
 #pre calculate the descreiptors of a directory and return as a dictionary
-def get_des(min_directory):
+def get_descs(min_directory):
     sift = SIFT()
     descriptors={}
     for f in os.listdir(min_directory):
@@ -232,6 +233,19 @@ def get_image_info(src,sigs,box):
             min_emd=emd
             min_f = f
     return min_f[:-4]
+
+#returns the most likely matching filename in an images directory
+def get_image_info_sift(src,descs,box):
+    max_good = 0
+    max_f = None
+
+    src_box = src[box[1]:box[3],box[0]:box[2]]
+    for f in descs:
+        good = calc_sift_precaculated_src2(src_box,descs[f])
+        if good > max_good:
+            max_good=good
+            max_f = f
+    return max_f[:-4]
 
 #returns the most likely matching filename in an images directory
 def get_state(src,sigs):
