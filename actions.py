@@ -89,9 +89,8 @@ def pycwnd_string(pycwnd, msg):
             pycwnd.SendMessage(win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
             pycwnd.SendMessage(win32con.WM_KEYUP, win32con.VK_RETURN, 0)
         else:
-            pause_pensively(0.3)
+            pause_pensively(0.5)
             pycwnd.SendMessage(win32con.WM_CHAR, ord(c), 0)
-    #pycwnd.UpdateWindow()
 
 def whnds_to_text(hwnds):
     for hwnd in range(0,len(hwnds)):
@@ -111,15 +110,28 @@ def print_all_whnds(hwnds):
 def check_game():
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
-        #win32gui.IsWindowVisible(whndl)
-        return True
+        #check if game is not minimized
+        f_whndl= win32gui.GetForegroundWindow()
+        if f_whndl == whndl:
+            return True
     return False
 
+def get_client_box():
+    whndl =  get_whndl("Hearthstone")
+    if whndl != None and whndl != 0:
+        window_box = win32gui.GetWindowRect(whndl)
+        client_box = win32gui.GetClientRect(whndl)
+
+    border_size=(window_box[2]-window_box[0]-client_box[2])/2
+    label_size=(window_box[3]-window_box[1]-client_box[3])-border_size
+    return (window_box[0]+border_size,window_box[1]+label_size,window_box[2]-border_size,window_box[3]-border_size)
+    
 def restart_game():
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
-        win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
-        pause_pensively(10)
+        win32gui.ShowWindow(whndl, win32con.SW_RESTORE)
+        foreground_whndl(whndl)
+        pause_pensively(5)
     else:
         whndl_error = get_whndl("Battle.net Error")
         if whndl_error == None or whndl_error == 0:
