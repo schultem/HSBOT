@@ -12,6 +12,8 @@ stage_sigs = None
 state_descs = None
 character_descs = None
 stage_descs = None
+opponent_char=None
+player_char=None
 
 ###############
 #    FLAGS    #
@@ -27,6 +29,7 @@ def play():
     actions.move_and_leftclick(c(defines.custom_decks_arrow))
     actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
     actions.move_and_leftclick(c(defines.play_button))
+    actions.pause_pensively(3)
 def queue():
     pass
 def versus():
@@ -39,30 +42,29 @@ def select():
 def wait():
     pass
 def player():
-    #global src,character_descs,stage_descs
-    global NEW_GAME
+    global src,character_descs
+    global NEW_GAME,opponent_char,player_char
     actions.pause_pensively(1)
 
     if NEW_GAME:
-        #logging.info("-------------NEW GAME INFO--------------")
-        #logging.info("OPPONENT: %s"%(vision.get_image_info(src,character_sigs,c(defines.enemy_box))))
-        #logging.info("PLAYER:   %s"%(vision.get_image_info(src,character_sigs,c(defines.player_box))))
-        #logging.info("STAGE:    %s"%(vision.get_image_info(src,stage_sigs,c(defines.stage_box))))
+        logging.info("-------------NEW GAME INFO--------------")
+        opponent_char=vision.get_image_info_sift(src,character_descs,c(defines.enemy_box))
+        logging.info("OPPONENT: %s"%(opponent_char))
+        player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
+        logging.info("PLAYER:   %s"%(player_char))
+        #logging.info("STAGE:    %s"%(vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))))
         NEW_GAME=False
 
     #logging.info("------PLAY CARDS------")
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-    play_attempt_counter=0
     while(player_cards != []):
-        if play_attempt_counter==2:
-            break
+
         actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,1)]))
         actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
         player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-        play_attempt_counter+=1
 
     #logging.info("------PLAY ABILITY------")
     actions.pause_pensively(0.50)
@@ -137,11 +139,21 @@ def player():
 def opponent():
     pass
 def victory():
-    logging.info("Victory")
-    actions.move_and_leftclick(c(defines.neutral))
+    actions.pause_pensively(1)
+    #verify the state
+    src = vision.screen_cap()
+    new_state  = defines.state_dict[vision.get_state_sift(src,state_descs)]
+    if new_state != None and new_state == defines.State.VICTORY:
+        logging.info("Victory")
+        actions.move_and_leftclick(c(defines.neutral))
 def defeat():
-    logging.info("Defeat")
-    actions.move_and_leftclick(c(defines.neutral))
+    actions.pause_pensively(1)
+    #verify the state
+    src = vision.screen_cap()
+    new_state  = defines.state_dict[vision.get_state_sift(src,state_descs)]
+    if new_state != None and new_state == defines.State.DEFEAT:
+        logging.info("Defeat")
+        actions.move_and_leftclick(c(defines.neutral))
 def error():
     logging.info("Error: Clicking OK in error message")
     actions.move_and_leftclick(c(defines.error))
@@ -165,16 +177,31 @@ def c(var):
     new = var
     return defines.convert(var,defines.ref)
 
+#Update monitor resolution and game screen location and resolution
+def update_resolutions():
+    monitor_x=actions.win32api.GetSystemMetrics(0)
+    monitor_y=actions.win32api.GetSystemMetrics(1)
+    defines.screen_box      = (0,0,monitor_x,monitor_y)
+    client_box              = actions.get_client_box()
+    defines.origin          = [client_box[0],client_box[1]]
+    defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+
 def main():
     global src,character_descs,state_descs,stage_descs
     global NEW_GAME
     new_state=0
     old_state=0
+    #get monitor resolution
+    monitor_x=actions.win32api.GetSystemMetrics(0)
+    monitor_y=actions.win32api.GetSystemMetrics(1)
+    defines.screen_box      = (0,0,monitor_x,monitor_y)
 
-    state_descs = vision.get_des(os.getcwd()+ '\\images\\state\\')
-
+    state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
+    character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
+    #stage_descs = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
+    
     logging.basicConfig(filename='game.log',level=logging.DEBUG)
-
+    
     while(True):
         src = vision.screen_cap()
         
@@ -183,24 +210,26 @@ def main():
             new_state  = defines.state_dict[state_name]
         else:
             new_state=defines.State.DESKTOP
-        print new_state
+        
         if new_state == old_state and new_state == defines.State.PLAY:
             #Might have been a connection error.
             actions.move_and_leftclick(c(defines.error))
             actions.move_and_leftclick(c(defines.neutral))
         
-        #check if Hearthstone is running
+        #check if Hearthstone is running and shown
         if actions.check_game() == False:
             new_state=defines.State.DESKTOP
+        else:
+            update_resolutions()
 
         if new_state != defines.State.DESKTOP:
             states[new_state]()
-            actions.move_and_leftclick(c(defines.neutral))
         else:
             #on the desktop for some reason, try to start the game or reshow the window if it's already running
             actions.pause_pensively(10)
             actions.restart_game()
-    
+            update_resolutions()
+            actions.move_and_leftclick(c(defines.neutral))
         old_state=new_state
 
 if __name__ == '__main__':
