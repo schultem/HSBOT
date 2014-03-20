@@ -4,11 +4,9 @@ import defines
 import logging
 from random import randint
 import os
+from Tkinter import *
 
 src = None
-state_sigs = None
-character_sigs = None
-stage_sigs = None
 state_descs = None
 character_descs = None
 stage_descs = None
@@ -47,11 +45,11 @@ def player():
     actions.pause_pensively(1)
 
     if NEW_GAME:
-        logging.info("-------------NEW GAME INFO--------------")
-        opponent_char=vision.get_image_info_sift(src,character_descs,c(defines.enemy_box))
-        logging.info("OPPONENT: %s"%(opponent_char))
-        player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
-        logging.info("PLAYER:   %s"%(player_char))
+        #logging.info("-------------NEW GAME INFO--------------")
+        #opponent_char=vision.get_image_info_sift(src,character_descs,c(defines.enemy_box))
+        #logging.info("OPPONENT: %s"%(opponent_char))
+        #player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
+        #logging.info("PLAYER:   %s"%(player_char))
         #logging.info("STAGE:    %s"%(vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))))
         NEW_GAME=False
 
@@ -139,23 +137,13 @@ def player():
 def opponent():
     pass
 def victory():
-    actions.pause_pensively(1)
-    #verify the state
-    src = vision.screen_cap()
-    new_state  = defines.state_dict[vision.get_state_sift(src,state_descs)]
-    if new_state != None and new_state == defines.State.VICTORY:
-        logging.info("Victory")
-        actions.move_and_leftclick(c(defines.neutral))
+    #logging.info("Victory")
+    actions.move_and_leftclick(c(defines.neutral))
 def defeat():
-    actions.pause_pensively(1)
-    #verify the state
-    src = vision.screen_cap()
-    new_state  = defines.state_dict[vision.get_state_sift(src,state_descs)]
-    if new_state != None and new_state == defines.State.DEFEAT:
-        logging.info("Defeat")
-        actions.move_and_leftclick(c(defines.neutral))
+    #logging.info("Defeat")
+    actions.move_and_leftclick(c(defines.neutral))
 def error():
-    logging.info("Error: Clicking OK in error message")
+    #logging.info("Error: Clicking OK in error message")
     actions.move_and_leftclick(c(defines.error))
 
 states = {
@@ -186,51 +174,98 @@ def update_resolutions():
     defines.origin          = [client_box[0],client_box[1]]
     defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
 
-def main():
+class App(Frame):
     global src,character_descs,state_descs,stage_descs
     global NEW_GAME
-    new_state=0
-    old_state=0
-    #get monitor resolution
-    monitor_x=actions.win32api.GetSystemMetrics(0)
-    monitor_y=actions.win32api.GetSystemMetrics(1)
-    defines.screen_box      = (0,0,monitor_x,monitor_y)
+    def change_led_color(self,color,input):
+        self.led.configure(background=color,text=input)
 
-    state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
-    character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
-    #stage_descs = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
-    
-    logging.basicConfig(filename='game.log',level=logging.DEBUG)
-    
-    while(True):
+    def __init__(self, *args, **kwargs):
+        Frame.__init__(self, *args, **kwargs)
+        self._job_id = None
+
+        self.new_state=0
+        self.old_state=0
+
+        self.led = Label(self, width=10, borderwidth=2, relief="groove")
+        self.start_button = Button(self, text="start", command=self.start)
+        self.stop_button  = Button(self, text="stop", command=self.stop)
+
+        self.start_button.pack(side=LEFT)
+        self.stop_button.pack(side=LEFT)
+        self.led.pack(side=RIGHT)
+
+        self.change_led_color("#ff0000","Off")
+
+
+    def stop(self):
+        if self._job_id is not None:
+            self.after_cancel(self._job_id)
+            self._job_id = None
+            self.change_led_color("#ff0000","Off")
+
+
+    def start(self):
+        if self._job_id is None:
+            self._job_id = self.after(10, lambda: self.run_state())
+
+    def run_state(self):
+        self.change_led_color("#00ff00","On")
+
+        update_resolutions()
+
         src = vision.screen_cap()
         
         state_name = vision.get_state_sift(src,state_descs)
         if state_name != None:
-            new_state  = defines.state_dict[state_name]
+            self.new_state  = defines.state_dict[state_name]
         else:
-            new_state=defines.State.DESKTOP
+            self.new_state=defines.State.DESKTOP
         
-        if new_state == old_state and new_state == defines.State.PLAY:
+        if self.new_state == self.old_state and self.new_state == defines.State.PLAY:
             #Might have been a connection error.
             actions.move_and_leftclick(c(defines.error))
             actions.move_and_leftclick(c(defines.neutral))
         
         #check if Hearthstone is running and shown
         if actions.check_game() == False:
-            new_state=defines.State.DESKTOP
+            self.new_state=defines.State.DESKTOP
         else:
             update_resolutions()
-
-        if new_state != defines.State.DESKTOP:
-            states[new_state]()
+        
+        if self.new_state != defines.State.DESKTOP:
+            states[self.new_state]()
         else:
             #on the desktop for some reason, try to start the game or reshow the window if it's already running
             actions.pause_pensively(10)
             actions.restart_game()
             update_resolutions()
             actions.move_and_leftclick(c(defines.neutral))
-        old_state=new_state
+        self.old_state=self.new_state
+
+        self._job_id = self.after(10, lambda: self.run_state())
+
+def main():
+    global src,character_descs,state_descs,stage_descs
+    global NEW_GAME
+
+    #get monitor resolution
+    monitor_x=actions.win32api.GetSystemMetrics(0)
+    monitor_y=actions.win32api.GetSystemMetrics(1)
+    defines.screen_box = (0,0,monitor_x,monitor_y)
+    
+    #pre-calulate sift descriptors
+    state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
+    character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
+    stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
+    
+    #logging.basicConfig(filename='game.log',level=logging.DEBUG)
+
+    #start the app window
+    root = Tk()
+    root.title("BBOT")
+    App(root).pack(side="top", fill="both")
+    root.mainloop()
 
 if __name__ == '__main__':
     main()
