@@ -1,7 +1,6 @@
 import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
-from pw import pw
 
 def leftClick():
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
@@ -97,7 +96,7 @@ def whnds_to_text(hwnds):
         hwnds[hwnd]=win32gui.GetWindowText(hwnds[hwnd])
     return hwnds
 
-def print_all_whnds(hwnds):
+def print_all_whnds():
     hwnds=[]
     def enumHandler(hwnd, lParam):
         hwnds.append(hwnd)
@@ -121,6 +120,10 @@ def get_client_box():
     if whndl != None and whndl != 0:
         window_box = win32gui.GetWindowRect(whndl)
         client_box = win32gui.GetClientRect(whndl)
+    else:
+        #default
+        window_box = defines.screen_box
+        client_box = defines.screen_box
 
     border_size=(window_box[2]-window_box[0]-client_box[2])/2
     label_size=(window_box[3]-window_box[1]-client_box[3])-border_size
@@ -147,6 +150,9 @@ def restart_game():
                 whndl_login = get_whndl("Battle.net Login")
                 if whndl_login != None and whndl_login != 0:
                     #prepare battlenet login window for input
+                    pw_file = open("pw.txt")
+                    pw=pw_file.readline()
+                    pw_file.close()
                     pycwnd_login = make_pycwnd(whndl_login)
                     pycwnd_string(pycwnd_login,pw)
                     pycwnd_click(pycwnd_login,defines.bnet_accept_pw_button)
@@ -159,7 +165,15 @@ def restart_game():
                 #get battlenet out of the way
                 pause_pensively(5)
                 win32gui.ShowWindow(whndl, win32con.SW_MINIMIZE)
-                pause_pensively(20)
+                pause_pensively(15)
+                
+                #Move game window to 0,0 and update it to represent the the clients desired resolution
+                game_whndl =  get_whndl("Hearthstone")
+                if game_whndl != None and game_whndl != 0:
+                    client_box              = get_client_box()
+                    defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+                    win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
+                    defines.origin          = [0,0]#explicitly updated to (0,0) in MoveWindow
         else:
             foreground_whndl(whndl_error)
             pycwnd_error = make_pycwnd(whndl_error)
