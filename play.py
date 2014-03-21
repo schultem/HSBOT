@@ -5,6 +5,9 @@ import logging
 from random import randint
 import os
 from Tkinter import *
+import tkFont
+import threading
+import Queue
 
 src = None
 state_descs = None
@@ -74,7 +77,6 @@ def player():
 
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
-    previous_player_minions=[]
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     while player_minions != [] and player_minions != None:
         p_m = randint(0,len(player_minions)-1) #attack with a random minion
@@ -99,7 +101,6 @@ def player():
         actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(0.50)
         src = vision.screen_cap()
-        previous_player_minions=player_minions
         player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     
     #logging.info("---ATTACK WITH CHARACTER---")
@@ -167,16 +168,80 @@ def c(var):
 
 #Update monitor resolution and game screen location and resolution
 def update_resolutions():
-    monitor_x=actions.win32api.GetSystemMetrics(0)
-    monitor_y=actions.win32api.GetSystemMetrics(1)
-    defines.screen_box      = (0,0,monitor_x,monitor_y)
     client_box              = actions.get_client_box()
     defines.origin          = [client_box[0],client_box[1]]
     defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+    #print "1",defines.game_screen_res
+    #print "2",defines.origin
+    #print "3",client_box
 
+class GameLogicThread(threading.Thread):
+    def __init__(self, queue):
+        threading.Thread.__init__(self)
+        self.queue = queue
+        self._stop = threading.Event()
+        self.new_state=0
+        self.old_state=0
+        self.state_desc = {
+                      0:'starting game',
+                      1:'home screen',
+                      2:'select deck',
+                      3:'finding opponent',
+                      4:'waiting',
+                      5:'exchange cards',
+                      6:'waiting',
+                      7:'bot turn',
+                      8:'opponent turn',
+                      9:'waiting',
+                      10:'waiting',
+                      11:'error'
+                     }
+    def stop(self):
+        self.queue.put("Stopping bot")
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()
+
+    def run(self):
+        self.new_state=0
+        self.old_state=0
+        self.queue.put("Starting bot")
+        while(not self.stopped()):
+            #check if Hearthstone is running and shown
+            if actions.check_game() == False:
+                self.new_state=defines.State.DESKTOP
+            else:
+                update_resolutions()
+                #try:
+                src = vision.screen_cap()
+                
+                state_name = vision.get_state_sift(src,state_descs)
+                if state_name != None:
+                    self.new_state  = defines.state_dict[state_name]
+                else:
+                    self.new_state=defines.State.DESKTOP
+                
+                if self.new_state == self.old_state and self.new_state == defines.State.PLAY:
+                    #Might have been a connection error.
+                    actions.move_and_leftclick(c(defines.error))
+                    actions.move_and_leftclick(c(defines.neutral))
+                #except:
+                #    pass
+
+            self.queue.put(self.state_desc[self.new_state])
+            if self.new_state != defines.State.DESKTOP:
+                states[self.new_state]()
+            else:
+                #on the desktop for some reason, try to start the game or reshow the window if it's already running
+                actions.pause_pensively(5)
+                actions.restart_game()
+                update_resolutions()
+                actions.move_and_leftclick(c(defines.neutral))
+            self.old_state=self.new_state
+
+#The GUI
 class App(Frame):
-    global src,character_descs,state_descs,stage_descs
-    global NEW_GAME
     def change_led_color(self,color,input):
         self.led.configure(background=color,text=input)
 
@@ -184,66 +249,56 @@ class App(Frame):
         Frame.__init__(self, *args, **kwargs)
         self._job_id = None
 
-        self.new_state=0
-        self.old_state=0
-
-        self.led = Label(self, width=10, borderwidth=2, relief="groove")
-        self.start_button = Button(self, text="start", command=self.start)
-        self.stop_button  = Button(self, text="stop", command=self.stop)
-
-        self.start_button.pack(side=LEFT)
-        self.stop_button.pack(side=LEFT)
-        self.led.pack(side=RIGHT)
+        default_font = tkFont.nametofont("TkDefaultFont")
+        default_font.configure(size=42)
+        self.led = Label(self, width=5, height=2,borderwidth=1.5, relief="groove")
+        self.qmessage = Label(self,text="",font=tkFont.nametofont("TkTextFont"))
+        self.start_button = Button(self, text="start", command=self.start_click)
+        self.stop_button  = Button(self, text="stop", command=self.stop_click)
+        
+        self.start_button.grid(row=1,column=0)
+        self.stop_button.grid(row=1,column=1)
+        self.led.grid(row=1,column=2)
+        self.qmessage.grid(row=0,column=2)
 
         self.change_led_color("#ff0000","Off")
+        self.stop_button.config(state='disabled')
+        
+        self.queue       = Queue.Queue()
+        self.logicthread = GameLogicThread(self.queue)
 
+    def queue_message(self,msg):
+        self.qmessage.configure(text=msg)
 
-    def stop(self):
+    def process_queue(self):
+        try:
+            msg = self.queue.get(0)
+            self.queue_message(msg)
+            self.after(100, self.process_queue)
+        except Queue.Empty:
+            self.after(100, self.process_queue)
+
+    def stop_click(self):
         if self._job_id is not None:
-            self.after_cancel(self._job_id)
+            self.logicthread.stop()
+            self.logicthread.join()
+            #reset thread
+            self.queue       = Queue.Queue()
+            self.logicthread = GameLogicThread(self.queue)
             self._job_id = None
             self.change_led_color("#ff0000","Off")
+            self.queue_message("")
+            self.start_button.config(state='normal')
+            self.stop_button.config(state='disabled')
 
-
-    def start(self):
+    def start_click(self):
         if self._job_id is None:
-            self._job_id = self.after(10, lambda: self.run_state())
-
-    def run_state(self):
-        self.change_led_color("#00ff00","On")
-
-        update_resolutions()
-
-        src = vision.screen_cap()
-        
-        state_name = vision.get_state_sift(src,state_descs)
-        if state_name != None:
-            self.new_state  = defines.state_dict[state_name]
-        else:
-            self.new_state=defines.State.DESKTOP
-        
-        if self.new_state == self.old_state and self.new_state == defines.State.PLAY:
-            #Might have been a connection error.
-            actions.move_and_leftclick(c(defines.error))
-            actions.move_and_leftclick(c(defines.neutral))
-        
-        #check if Hearthstone is running and shown
-        if actions.check_game() == False:
-            self.new_state=defines.State.DESKTOP
-        else:
-            update_resolutions()
-        
-        if self.new_state != defines.State.DESKTOP:
-            states[self.new_state]()
-        else:
-            #on the desktop for some reason, try to start the game or reshow the window if it's already running
-            actions.pause_pensively(10)
-            actions.restart_game()
-            update_resolutions()
-            actions.move_and_leftclick(c(defines.neutral))
-        self.old_state=self.new_state
-
-        self._job_id = self.after(10, lambda: self.run_state())
+            self.start_button.config(state='disabled')
+            self.stop_button.config(state='normal')
+            self.change_led_color("#00ff00","On")
+            self._job_id = True
+            self.logicthread.start()
+            self.after(100, self.process_queue)
 
 def main():
     global src,character_descs,state_descs,stage_descs
@@ -264,7 +319,7 @@ def main():
     #start the app window
     root = Tk()
     root.title("BBOT")
-    App(root).pack(side="top", fill="both")
+    App(root).pack()
     root.mainloop()
 
 if __name__ == '__main__':
