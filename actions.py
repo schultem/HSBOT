@@ -24,10 +24,12 @@ def getCursorPos():
 
 def interpCursorPos(coord):
     coord_curr = getCursorPos()
+    newpos  = coord_curr
     while(coord_curr[0]!=coord[0] or coord_curr[1]!=coord[1]):        
         coord_curr = getCursorPos()
-        for i in range(0,15000):    #pause
-            i=i+1
+        #if the user is moving the mouse, break
+        if coord_curr != newpos:
+            break
         if (coord_curr[0]<coord[0]):
             xd=1
         elif (coord_curr[0]>coord[0]):
@@ -40,7 +42,10 @@ def interpCursorPos(coord):
             yd=-1
         else:
             yd=0
-        setCursorPos([coord_curr[0]+xd,coord_curr[1]+yd])
+        newpos=[coord_curr[0]+xd,coord_curr[1]+yd]
+        setCursorPos(newpos)
+        for i in range(0,20000):    #pause
+            i=i+1
 
 def pause_pensively(s):
     time.sleep(s)
@@ -128,13 +133,42 @@ def get_client_box():
     border_size=(window_box[2]-window_box[0]-client_box[2])/2
     label_size=(window_box[3]-window_box[1]-client_box[3])-border_size
     return (window_box[0]+border_size,window_box[1]+label_size,window_box[2]-border_size,window_box[3]-border_size)
-    
+
+#change ratio of input list to closest value of output ratio
+#use here is to get game close to 16:9 resolution so the button locations work
+def closest_ratio(r_input,r_output):
+    if r_input != None and r_input[1] !=0:
+        if float(r_input[0])/float(r_input[1]) > r_output:
+            change_var = r_input[0]
+            while float(change_var)/float(r_input[1]) > r_output:
+                change_var-=1
+            return [change_var,r_input[1]]
+        else:
+            change_var = r_input[0]
+            while float(change_var)/float(r_input[1]) < r_output:
+                change_var+=1
+            return [change_var,r_input[1]]
+    return r_input
+
+#Move game window to 0,0 and update it to represent the the clients desired resolution
+def reset_game_window():
+    game_whndl =  get_whndl("Hearthstone")
+    if game_whndl != None and game_whndl != 0:
+        win32gui.ShowWindow(game_whndl, win32con.SW_RESTORE)
+        foreground_whndl(game_whndl)
+        client_box              = get_client_box()
+        defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+        defines.game_screen_res = closest_ratio(defines.game_screen_res,16/9.)
+        win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
+        defines.origin          = [0,0]#explicitly updated to (0,0) in MoveWindow
+
 def restart_game():
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
         win32gui.ShowWindow(whndl, win32con.SW_RESTORE)
         foreground_whndl(whndl)
-        pause_pensively(5)
+        pause_pensively(1)
+        #reset_game_window()
     else:
         whndl_error = get_whndl("Battle.net Error")
         if whndl_error == None or whndl_error == 0:
@@ -163,17 +197,11 @@ def restart_game():
                 pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
             
                 #get battlenet out of the way
-                pause_pensively(5)
+                pause_pensively(1)
                 win32gui.ShowWindow(whndl, win32con.SW_MINIMIZE)
-                pause_pensively(15)
+                pause_pensively(5)
                 
-                #Move game window to 0,0 and update it to represent the the clients desired resolution
-                game_whndl =  get_whndl("Hearthstone")
-                if game_whndl != None and game_whndl != 0:
-                    client_box              = get_client_box()
-                    defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
-                    win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
-                    defines.origin          = [0,0]#explicitly updated to (0,0) in MoveWindow
+                reset_game_window()
         else:
             foreground_whndl(whndl_error)
             pycwnd_error = make_pycwnd(whndl_error)
