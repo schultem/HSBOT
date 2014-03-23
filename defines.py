@@ -105,7 +105,7 @@ state_box =[(0,1037,1920,1080),   #deskop
 #0 1 2
 #3 4 5 
 #6 7 8
-DECKS_TO_USE = [0,1,2]
+DECKS_TO_USE = [0,1,2,3,4,5,6,7,8]
 
 class State:
     DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR = range(0,12)
