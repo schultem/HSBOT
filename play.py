@@ -10,11 +10,18 @@ import threading
 import Queue
 
 src = None
-state_descs = None
-character_descs = None
-stage_descs = None
+
+#pre-calulate sift descriptors
+state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
+character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
+stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
 opponent_char=None
 player_char=None
+
+#get monitor resolution
+monitor_x=actions.win32api.GetSystemMetrics(0)
+monitor_y=actions.win32api.GetSystemMetrics(1)
+defines.screen_box = (0,0,monitor_x,monitor_y)
 
 ###############
 #    FLAGS    #
@@ -27,9 +34,10 @@ def desktop():
 def home():
     actions.move_and_leftclick(c(defines.main_menu_play_button))
 def play():
-    actions.move_and_leftclick(c(defines.custom_decks_arrow))
-    actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
-    actions.move_and_leftclick(c(defines.play_button))
+    if len(defines.DECKS_TO_USE):
+        actions.move_and_leftclick(c(defines.custom_decks_arrow))
+        actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
+        actions.move_and_leftclick(c(defines.play_button))
     actions.pause_pensively(3)
 def queue():
     pass
@@ -43,7 +51,7 @@ def select():
 def wait():
     pass
 def player():
-    global src,character_descs
+    global src,character_descs,stage_descs
     global NEW_GAME,opponent_char,player_char
     actions.pause_pensively(1)
 
@@ -123,7 +131,7 @@ def player():
         actions.move_and_leftclick(c(defines.neutral))
     
     #logging.info("------PLAY INFO CHECK-------")
-    actions.pause_pensively(1)
+    actions.pause_pensively(2)
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
@@ -171,9 +179,6 @@ def update_resolutions():
     client_box              = actions.get_client_box()
     defines.origin          = [client_box[0],client_box[1]]
     defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
-    #print "1",defines.game_screen_res
-    #print "2",defines.origin
-    #print "3",client_box
 
 class GameLogicThread(threading.Thread):
     def __init__(self, queue):
@@ -197,7 +202,7 @@ class GameLogicThread(threading.Thread):
                       11:'error'
                      }
     def stop(self):
-        self.queue.put("Stopping bot")
+        #self.queue.put("Stopping bot")
         self._stop.set()
 
     def stopped(self):
@@ -208,60 +213,141 @@ class GameLogicThread(threading.Thread):
         self.old_state=0
         self.queue.put("Starting bot")
         while(not self.stopped()):
-            #check if Hearthstone is running and shown
-            if actions.check_game() == False:
-                self.new_state=defines.State.DESKTOP
-            else:
-                update_resolutions()
-                #try:
-                src = vision.screen_cap()
-                
-                state_name = vision.get_state_sift(src,state_descs)
-                if state_name != None:
-                    self.new_state  = defines.state_dict[state_name]
-                else:
+            #check if battle net is running and Hearthstone is running and shown
+            if actions.check_bnet("Battle.net"):
+                if actions.check_game("Hearthstone") == False:
                     self.new_state=defines.State.DESKTOP
+                else:
+                    update_resolutions()
+                    try:
+                        src = vision.screen_cap()
+                        
+                        state_name = vision.get_state_sift(src,state_descs)
+                        if state_name != None:
+                            self.new_state  = defines.state_dict[state_name]
+                        else:
+                            self.new_state=defines.State.DESKTOP
+                        
+                        if self.new_state == self.old_state and (self.new_state == defines.State.PLAY or self.new_state == defines.State.HOME):
+                            #Might have been a connection error.
+                            self.queue.put("Must enable at least one custom deck in Options!")
+                            actions.move_and_leftclick(c(defines.error))
+                            actions.move_and_leftclick(c(defines.neutral))
                 
-                if self.new_state == self.old_state and self.new_state == defines.State.PLAY:
-                    #Might have been a connection error.
-                    actions.move_and_leftclick(c(defines.error))
-                    actions.move_and_leftclick(c(defines.neutral))
-                #except:
-                #    pass
+                    except:
+                        self.queue.put("Error: Invalid state, starting the bot again may help")
+                        self.stop()
+            else:
+                self.queue.put("Error: Battle.net may not be running, please start Battle.net")
+                self.stop()
 
             self.queue.put(self.state_desc[self.new_state])
-            if self.new_state != defines.State.DESKTOP:
+            if self.new_state != defines.State.DESKTOP and not self.stopped():
                 states[self.new_state]()
-            else:
+            elif self.new_state == defines.State.DESKTOP and not self.stopped():
                 #on the desktop for some reason, try to start the game or reshow the window if it's already running
                 actions.pause_pensively(5)
-                actions.restart_game()
-                update_resolutions()
-                actions.move_and_leftclick(c(defines.neutral))
+                if not self.stopped():
+                    actions.restart_game()
+                    update_resolutions()
+                    actions.move_and_leftclick(c(defines.neutral))
             self.old_state=self.new_state
 
 #The GUI
 class App(Frame):
     def change_led_color(self,color,input):
         self.led.configure(background=color,text=input)
+    
+    def donothing(self):
+        filewin = Toplevel(self)
+        #button = Button(filewin, text="Do nothing button")
+        #button.pack()
 
-    def __init__(self, *args, **kwargs):
-        Frame.__init__(self, *args, **kwargs)
+    def config_deckbutton(self,deck):
+        deck-=1
+        if self.deck_buttons[deck]['background'] == "#00ff00":#color is green, so user is disabling
+            self.deck_buttons[deck].configure(background="#ff0000")
+            defines.DECKS_TO_USE.remove(deck)
+        else:#color is red, so user is enabling
+            self.deck_buttons[deck].configure(background="#00ff00")
+            defines.DECKS_TO_USE.append(deck)
+
+    def toggle_deck_button1(self):
+        self.config_deckbutton(1)
+    def toggle_deck_button2(self):
+        self.config_deckbutton(2)
+    def toggle_deck_button3(self):
+        self.config_deckbutton(3)
+    def toggle_deck_button4(self):
+        self.config_deckbutton(4)
+    def toggle_deck_button5(self):
+        self.config_deckbutton(5)
+    def toggle_deck_button6(self):
+        self.config_deckbutton(6)
+    def toggle_deck_button7(self):
+        self.config_deckbutton(7)
+    def toggle_deck_button8(self):
+        self.config_deckbutton(8)
+    def toggle_deck_button9(self):
+        self.config_deckbutton(9)
+        
+    def select_decks_to_use(self):
+        deckwin = Toplevel(self)
+        deckwin.resizable(0,0)
+        custom_title = Label(deckwin,text="Select custom decks to use:",font=tkFont.nametofont("TkTextFont"))
+        custom_title.grid(row=0,column=0,columnspan=3)
+        self.deck_buttons=[]
+        self.deck_buttons.append(Button(deckwin, text="1", command=self.toggle_deck_button1))
+        self.deck_buttons.append(Button(deckwin, text="2", command=self.toggle_deck_button2))
+        self.deck_buttons.append(Button(deckwin, text="3", command=self.toggle_deck_button3))
+        self.deck_buttons.append(Button(deckwin, text="4", command=self.toggle_deck_button4))
+        self.deck_buttons.append(Button(deckwin, text="5", command=self.toggle_deck_button5))
+        self.deck_buttons.append(Button(deckwin, text="6", command=self.toggle_deck_button6))
+        self.deck_buttons.append(Button(deckwin, text="7", command=self.toggle_deck_button7))
+        self.deck_buttons.append(Button(deckwin, text="8", command=self.toggle_deck_button8))
+        self.deck_buttons.append(Button(deckwin, text="9", command=self.toggle_deck_button9))
+        for i in range(0,9):
+            self.deck_buttons[i].grid(row=i/3+1,column=i%3)
+            if i in defines.DECKS_TO_USE:
+                self.deck_buttons[i].configure(background="#00ff00")
+            else:
+                self.deck_buttons[i].configure(background="#ff0000")
+
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.parent = parent 
+        menubar = Menu(self.parent)
+        self.parent.config(menu=menubar)
+        optionsmenu = Menu(menubar, tearoff=0)
+        optionsmenu.add_command(label="Custom Decks", command=self.select_decks_to_use)
+        optionsmenu.add_separator()
+        optionsmenu.add_command(label="Exit", command=self.quit)
+        menubar.add_cascade(label="Options", menu=optionsmenu)
+
+        helpmenu = Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="Help Index", command=self.donothing)
+        helpmenu.add_command(label="Donate", command=self.donothing)
+        helpmenu.add_command(label="About...", command=self.donothing)
+        menubar.add_cascade(label="Help", menu=helpmenu)
+
         self._job_id = None
+        self._error  = ""
+        self.parent.title("BBOT")
+        self.parent.resizable(0,0)
 
         default_font = tkFont.nametofont("TkDefaultFont")
         default_font.configure(size=42)
-        self.led = Label(self, width=5, height=2,borderwidth=1.5, relief="groove")
-        self.qmessage = Label(self,text="",font=tkFont.nametofont("TkTextFont"))
+        self.led = Button(self,state='disabled')
+        self.qmessage = Label(self,text="Edit the decks for the bot to use with Options->Custom_Decks before starting",font=tkFont.nametofont("TkTextFont"))
         self.start_button = Button(self, text="start", command=self.start_click)
         self.stop_button  = Button(self, text="stop", command=self.stop_click)
-        
-        self.start_button.grid(row=1,column=0)
-        self.stop_button.grid(row=1,column=1)
-        self.led.grid(row=1,column=2)
-        self.qmessage.grid(row=0,column=2)
 
-        self.change_led_color("#ff0000","Off")
+        self.start_button.grid(row=1,column=0,sticky='N')
+        self.stop_button.grid(row=1,column=1,sticky='N')
+        self.led.grid(row=1,column=2)
+        self.qmessage.grid(row=0,column=0,columnspan=3)
+
+        self.change_led_color("#ff0000"," off ")
         self.stop_button.config(state='disabled')
         
         self.queue       = Queue.Queue()
@@ -273,7 +359,15 @@ class App(Frame):
     def process_queue(self):
         try:
             msg = self.queue.get(0)
-            self.queue_message(msg)
+            if self._error != "":
+                self.queue_message(self._error)
+            else:
+                if msg[0:5] == "Error":
+                    self._error = msg
+                    self.queue_message(msg)
+                    self.stop_click()
+                else:
+                    self.queue_message(msg)
             self.after(100, self.process_queue)
         except Queue.Empty:
             self.after(100, self.process_queue)
@@ -282,43 +376,32 @@ class App(Frame):
         if self._job_id is not None:
             self.logicthread.stop()
             self.logicthread.join()
-            #reset thread
-            self.queue       = Queue.Queue()
-            self.logicthread = GameLogicThread(self.queue)
             self._job_id = None
-            self.change_led_color("#ff0000","Off")
+            self.change_led_color("#ff0000"," off ")
             self.queue_message("")
             self.start_button.config(state='normal')
             self.stop_button.config(state='disabled')
 
     def start_click(self):
         if self._job_id is None:
+            self._error = ""
             self.start_button.config(state='disabled')
             self.stop_button.config(state='normal')
-            self.change_led_color("#00ff00","On")
+            self.change_led_color("#00ff00"," on ")
             self._job_id = True
+            #reset thread
+            self.queue       = Queue.Queue()
+            self.logicthread = GameLogicThread(self.queue)
             self.logicthread.start()
             self.after(100, self.process_queue)
 
 def main():
-    global src,character_descs,state_descs,stage_descs
+    global src
     global NEW_GAME
-
-    #get monitor resolution
-    monitor_x=actions.win32api.GetSystemMetrics(0)
-    monitor_y=actions.win32api.GetSystemMetrics(1)
-    defines.screen_box = (0,0,monitor_x,monitor_y)
-    
-    #pre-calulate sift descriptors
-    state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
-    character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
-    stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
-    
     #logging.basicConfig(filename='game.log',level=logging.DEBUG)
 
     #start the app window
     root = Tk()
-    root.title("BBOT")
     App(root).pack()
     root.mainloop()
 
