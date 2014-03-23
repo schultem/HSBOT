@@ -27,8 +27,9 @@ def interpCursorPos(coord):
     newpos  = coord_curr
     while(coord_curr[0]!=coord[0] or coord_curr[1]!=coord[1]):        
         coord_curr = getCursorPos()
-        #if the user is moving the mouse, break
+        #if the user is moving the mouse, pause a spell and break
         if coord_curr != newpos:
+            pause_pensively(3)
             break
         if (coord_curr[0]<coord[0]):
             xd=1
@@ -111,8 +112,16 @@ def print_all_whnds():
     print text_hwnds
 
 #Return True if game is not minimized and is running.  Otherwise False
-def check_game():
-    whndl =  get_whndl("Hearthstone")
+def check_bnet(title):
+    whndl =  get_whndl(title)
+    if whndl != None and whndl != 0:
+        return True
+    return False
+
+    
+#Return True if game is not minimized and is running.  Otherwise False
+def check_game(title):
+    whndl =  get_whndl(title)
     if whndl != None and whndl != 0:
         #check if game is not minimized
         f_whndl= win32gui.GetForegroundWindow()
@@ -168,7 +177,7 @@ def restart_game():
         win32gui.ShowWindow(whndl, win32con.SW_RESTORE)
         foreground_whndl(whndl)
         pause_pensively(1)
-        #reset_game_window()
+        reset_game_window()
     else:
         whndl_error = get_whndl("Battle.net Error")
         if whndl_error == None or whndl_error == 0:
