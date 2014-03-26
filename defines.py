@@ -64,6 +64,7 @@ error                     = [957,576]
 play_card_left            = [400,600]
 play_card_right           = [1470,600]
 play_card                 = [[1470,600],[400,600]]
+bnet_games_button         = [173,46]
 bnet_hearthstone_button   = [55,520]
 bnet_play_button          = [282,966]
 bnet_go_online_button     = [1820,60]
@@ -74,7 +75,7 @@ bnet_launch_error_button  = [60,120]
 # INFO BOX #
 ############
 stage_box                   = (250,0,720,230)
-hand_box                    = (540,1032,1330,1079)
+hand_box                    = (540,1040,1330,1079)
 turn_box                    = (1455,435,1640,540)
 enemy_box                   = (910,133,1005,273)
 player_box                  = (910,767,1005,902)
