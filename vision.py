@@ -305,24 +305,7 @@ def horizontal_edges(image,x=None):
         elif image[i,x] > image[i+1,x]:
             falling_edges.append([x,i])
     
-    return rising_edges,falling_edges 
-
-#Draw (approximately) vertical lines detected in an image to result
-def draw_vertical_lines(src,result):
-    vertical_lines = HoughLines(src,3,np.pi/180,100)
-    if vertical_lines != None:
-        for rho,theta in vertical_lines[0]:
-            if theta > 2.6 or theta < 0.3:
-                a = np.cos(theta)
-                b = np.sin(theta)
-                x0 = a*rho
-                y0 = b*rho
-                x1 = int(x0 + 1000*(-b))
-                y1 = int(y0 + 1000*(a))
-                x2 = int(x0 - 1000*(-b))
-                y2 = int(y0 - 1000*(a))
-                line(result,(x1,y1),(x2,y2),(255,255,255),3)
-    return result
+    return rising_edges,falling_edges
 
 def get_playable_cards(src,box,pad=20):
     src_box = src[box[1]:box[3],box[0]:box[2]]
@@ -330,11 +313,8 @@ def get_playable_cards(src,box,pad=20):
     result = inRange(gray,0, 0)
     hsv1 = cvtColor(src_box, COLOR_BGR2HSV)
     mask = inRange(hsv1,lower_green, upper_green)
-    lines = draw_vertical_lines(mask,result)
-    kernel = np.ones((4,4),np.uint8)
-    opening = morphologyEx(lines, MORPH_OPEN, kernel)
 
-    _,falling_edges = vertical_edges(opening,opening.shape[0]/2)
+    _,falling_edges = vertical_edges(mask,mask.shape[0]/2)
     falling_edges = [[x+box[0]+pad,y+box[1]] for [x,y] in falling_edges]#translate coords to full screen coords rather than box coords
     return falling_edges
 
@@ -364,10 +344,10 @@ def prepare_mask(src,color='green'):
     elif color=='red':
         mask = inRange(hsv1,lower_red, upper_red)
 
-    kernel = np.ones((2,2),np.uint8)
+    kernel = np.ones((1,1),np.uint8)
     opening = morphologyEx(mask, MORPH_OPEN, kernel)
 
-    kernel = np.ones((10,10),np.uint8)
+    kernel = np.ones((5,5),np.uint8)
     dilation = dilate(opening,kernel,iterations = 2)
 
     return dilation
