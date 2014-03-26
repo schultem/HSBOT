@@ -9,6 +9,7 @@ import tkFont
 import threading
 import Queue
 
+#Store screen captures
 src = None
 
 #pre-calulate sift descriptors
@@ -23,11 +24,19 @@ monitor_x=actions.win32api.GetSystemMetrics(0)
 monitor_y=actions.win32api.GetSystemMetrics(1)
 defines.screen_box = (0,0,monitor_x,monitor_y)
 
-###############
-#    FLAGS    #
-###############
+#Shorter binding for the coord resolution convert function
+def c(var):
+    new = var
+    return defines.convert(var,defines.ref)
+
+#Update monitor resolution and game screen location and resolution
+def update_resolutions():
+    client_box              = actions.get_client_box("Hearthstone")
+    defines.origin          = [client_box[0],client_box[1]]
+    defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+
+#Flags
 NEW_GAME = False
-THE_COIN = False
 
 def desktop():
     pass
@@ -46,7 +55,6 @@ def versus():
 def select():
     global NEW_GAME
     NEW_GAME = True
-    
     actions.move_and_leftclick(c(defines.confirm_hand_button))
 def wait():
     pass
@@ -170,16 +178,6 @@ states = {
     defines.State.ERROR    :error,
 }
 
-def c(var):
-    new = var
-    return defines.convert(var,defines.ref)
-
-#Update monitor resolution and game screen location and resolution
-def update_resolutions():
-    client_box              = actions.get_client_box()
-    defines.origin          = [client_box[0],client_box[1]]
-    defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
-
 class GameLogicThread(threading.Thread):
     def __init__(self, queue):
         threading.Thread.__init__(self)
@@ -202,7 +200,6 @@ class GameLogicThread(threading.Thread):
                       11:'error'
                      }
     def stop(self):
-        #self.queue.put("Stopping bot")
         self._stop.set()
 
     def stopped(self):
@@ -257,11 +254,6 @@ class GameLogicThread(threading.Thread):
 class App(Frame):
     def change_led_color(self,color,input):
         self.led.configure(background=color,text=input)
-    
-    def donothing(self):
-        filewin = Toplevel(self)
-        #button = Button(filewin, text="Do nothing button")
-        #button.pack()
 
     def config_deckbutton(self,deck):
         deck-=1
@@ -313,6 +305,53 @@ class App(Frame):
             else:
                 self.deck_buttons[i].configure(background="#ff0000")
 
+    def donate_window(self):
+        donatewin = Toplevel(self)
+        donatewin.resizable(0,0)
+        custom_title = Label(donatewin,text="Bitcoin",font=tkFont.nametofont("TkTextFont"))
+
+    def help_window(self):
+        def set_text_newline(s):
+            self.txt.insert(INSERT, s+'\n')
+        helpwin = Toplevel(self)
+        # create a Frame for the Text and Scrollbar
+        txt_frm = Frame(helpwin, width=600, height=600)
+        txt_frm.pack(fill="both", expand=True)
+        # ensure a consistent GUI size
+        txt_frm.grid_propagate(False)
+        # implement stretchability
+        txt_frm.grid_rowconfigure(0, weight=1)
+        txt_frm.grid_columnconfigure(0, weight=1)
+
+        # create a Text widget
+        self.txt = Text(txt_frm, borderwidth=3, relief="sunken")
+        self.txt.config(font=("consolas", 12), undo=True, wrap='word')
+        set_text_newline("This is a Hearthstone color bot that takes screenshots of the game window and uses computer vision (sift and color masking) to find playable cards, use the character ability, and to attack with minions.")
+        set_text_newline("")
+        set_text_newline("How to use:")
+        set_text_newline(" -Make custom decks that the bot can use and note their number in the list (1-9)")
+        set_text_newline(" -Start Battle.net or start Hearthstone and start the bot   ")
+        set_text_newline(" -Select the custom decks that the bot can use with Options->Custom Decks.  Green means use the deck, red means do not use the deck.")
+        set_text_newline(" -Press start, the bot will attempt to start and use the game. It may take a couple of seconds.")
+        set_text_newline(" -Press stop to stop the bot, it may take a couple of seconds.")
+        set_text_newline("")
+        set_text_newline("The bot takes control of the mouse. If it detects that the user is using the mouse, it will stop and pause for a couple of seconds.")
+        set_text_newline("")
+        set_text_newline("The bot can play simple minions or spells that don't have targeting abilities (such as 'give a minion +1/+1' or'deal 3 damage' or 'silence a minion'). Basically, if the card can be played by right-clicking, dragging, and right-clicking on the minion field, the bot will play it. Otherwise it will might get stuck.")
+        set_text_newline("")
+        set_text_newline("If the game resolution is not 16:9 the bot will automatically convert it to 16:9.  The recommended resolutions are 1366x768, 1280x720, or 1920x1080. If the monitor resolution or game resolution is changed it is recommended to restart the bot. It is recommended to use the hearthstone client in windowed mode so it can be minimized easily.")
+        set_text_newline("")
+        set_text_newline("The bot will attempt to restart the game if it closes or disconnects.")
+        set_text_newline("")
+        set_text_newline("")
+        self.txt.config(state="disabled")
+        self.txt.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+
+        # create a Scrollbar and associate it with txt
+        scrollb = Scrollbar(txt_frm, command=self.txt.yview)
+        scrollb.grid(row=0, column=1, sticky='nsew')
+        self.txt['yscrollcommand'] = scrollb.set
+
     def __init__(self, parent):
         Frame.__init__(self, parent)
         self.parent = parent 
@@ -325,9 +364,8 @@ class App(Frame):
         menubar.add_cascade(label="Options", menu=optionsmenu)
 
         helpmenu = Menu(menubar, tearoff=0)
-        helpmenu.add_command(label="Help Index", command=self.donothing)
-        helpmenu.add_command(label="Donate", command=self.donothing)
-        helpmenu.add_command(label="About...", command=self.donothing)
+        helpmenu.add_command(label="Help", command=self.help_window)
+        #helpmenu.add_command(label="Donate", command=self.donate_window)
         menubar.add_cascade(label="Help", menu=helpmenu)
 
         self._job_id = None
