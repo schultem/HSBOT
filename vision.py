@@ -166,7 +166,7 @@ def get_descs(min_directory):
 
     return descriptors
 
-def pre_calculate_des(img_directory):
+def pre_calculate_des(img2):
     # Initiate SIFT detector
     sift = SIFT()
     _, des2 = sift.detectAndCompute(img2,None)
