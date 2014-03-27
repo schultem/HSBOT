@@ -8,6 +8,8 @@ from Tkinter import *
 import tkFont
 import threading
 import Queue
+import base64
+import qr
 
 #Store screen captures
 src = None
@@ -15,7 +17,7 @@ src = None
 #pre-calulate sift descriptors
 state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
 character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
-stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
+#stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
 opponent_char=None
 player_char=None
 
@@ -59,12 +61,13 @@ def select():
 def wait():
     pass
 def player():
-    global src,character_descs,stage_descs
+    global src#,character_descs,stage_descs
     global NEW_GAME,opponent_char,player_char
     actions.pause_pensively(1)
 
     if NEW_GAME:
         #logging.info("-------------NEW GAME INFO--------------")
+        #src = vision.screen_cap()
         #opponent_char=vision.get_image_info_sift(src,character_descs,c(defines.enemy_box))
         #logging.info("OPPONENT: %s"%(opponent_char))
         #player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
@@ -74,6 +77,7 @@ def player():
 
     #logging.info("------PLAY CARDS------")
     src = vision.screen_cap()
+    player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     while(player_cards != []):
 
@@ -87,9 +91,16 @@ def player():
     actions.pause_pensively(0.50)
     src = vision.screen_cap()
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    if player_ability != [] and player_ability != None:
-        actions.move_and_leftclick(c(defines.player_ability))
-        actions.move_and_leftclick(c(defines.neutral))
+    if player_ability != [] and player_ability != None and player_char != None:
+        if player_char == 'mage':
+            actions.move_and_leftclick(c(defines.player_ability))
+            actions.move_and_leftclick(c(defines.opponent_hero))
+        elif player_char == 'priest':
+            actions.move_and_leftclick(c(defines.player_ability))
+            actions.move_and_leftclick(c(defines.player_hero))
+        else:
+            actions.move_and_leftclick(c(defines.player_ability))
+            actions.move_and_leftclick(c(defines.neutral))
 
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
@@ -307,8 +318,16 @@ class App(Frame):
 
     def donate_window(self):
         donatewin = Toplevel(self)
-        donatewin.resizable(0,0)
-        custom_title = Label(donatewin,text="Bitcoin",font=tkFont.nametofont("TkTextFont"))
+        img = PhotoImage(data=qr.qrdata)
+        self.qr_img = Label(donatewin, image = img)
+        self.qr_img.image=img
+        address='1KLTV69RzZSJEExic97q4btFuHRBgacEd3'
+        self.donatetxt = Text(donatewin, borderwidth=3, relief="sunken", width=34, height=1)
+        self.donatetxt.config(font=("consolas", 12), undo=True, wrap='word')
+        self.donatetxt.insert(INSERT, address)
+        self.donatetxt.config(state="disabled")
+        self.donatetxt.pack()
+        self.qr_img.pack()
 
     def help_window(self):
         def set_text_newline(s):
@@ -337,7 +356,7 @@ class App(Frame):
         set_text_newline("")
         set_text_newline("The bot takes control of the mouse. If it detects that the user is using the mouse, it will stop and pause for a couple of seconds.")
         set_text_newline("")
-        set_text_newline("The bot can play simple minions or spells that don't have targeting abilities (such as 'give a minion +1/+1' or'deal 3 damage' or 'silence a minion'). Basically, if the card can be played by right-clicking, dragging, and right-clicking on the minion field, the bot will play it. Otherwise it will might get stuck.")
+        set_text_newline("The bot can play simple minions or spells that don't have targeting abilities (such as 'give a minion +1/+1' or'deal 3 damage' or 'silence a minion'). Basically, if the card can be played by right-clicking, dragging, and right-clicking on the minion field, the bot will play it. Otherwise it might get stuck.")
         set_text_newline("")
         set_text_newline("If the game resolution is not 16:9 the bot will automatically convert it to 16:9.  The recommended resolutions are 1366x768, 1280x720, or 1920x1080. If the monitor resolution or game resolution is changed it is recommended to restart the bot. It is recommended to use the hearthstone client in windowed mode so it can be minimized easily.")
         set_text_newline("")
@@ -365,7 +384,7 @@ class App(Frame):
 
         helpmenu = Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Help", command=self.help_window)
-        #helpmenu.add_command(label="Donate", command=self.donate_window)
+        helpmenu.add_command(label="Donate Bitcoin!", command=self.donate_window)
         menubar.add_cascade(label="Help", menu=helpmenu)
 
         self._job_id = None
