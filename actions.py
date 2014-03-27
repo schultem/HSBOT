@@ -178,7 +178,7 @@ def reset_game_window(update_size=True):
             win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
         else:
             window_box = win32gui.GetWindowRect(game_whndl)
-            defines.game_screen_res = [window_box[2],window_box[3]]
+            defines.game_screen_res = [window_box[2]-window_box[0],window_box[3]-window_box[1]]
             win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
 
         defines.origin          = [0,0]#explicitly updated to (0,0) in MoveWindow
