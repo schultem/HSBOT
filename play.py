@@ -77,7 +77,10 @@ def player():
 
     #logging.info("------PLAY CARDS------")
     src = vision.screen_cap()
-    player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
+    try:
+        player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
+    except:
+        player_char=None
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     while(player_cards != []):
 
@@ -114,17 +117,22 @@ def player():
         enemy=[]
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
-        enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
+        enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
         if enemy_minions != []:
             e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
         else:
             e_m = []
-        if enemy != [] and enemy != None:
-            actions.move_and_leftclick(c(defines.opponent_hero))
-        elif enemy_minions != [] and enemy_minions != None:
+        if enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[e_m])
+        elif enemy != [] and enemy != None:
+            actions.move_and_leftclick(c(defines.opponent_hero))
         else:
-            actions.pause_pensively(6)
+            #something's wrong, try to attack any minion
+            enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
+            if enemy_minions != [] and enemy_minions != None:
+                actions.move_and_leftclick(enemy_minions[0])
+            else:
+                actions.pause_pensively(6)
         actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(0.50)
         src = vision.screen_cap()
@@ -142,11 +150,20 @@ def player():
         enemy=[]
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
-        enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
-        if enemy != [] and enemy != None:
+        enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
+        if enemy_minions != []:
+            e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
+        else:
+            e_m = []
+        if enemy_minions != [] and enemy_minions != None:
+            actions.move_and_leftclick(enemy_minions[e_m])
+        elif enemy != [] and enemy != None:
             actions.move_and_leftclick(c(defines.opponent_hero))
-        elif enemy_minions != [] and enemy_minions != None:
-            actions.move_and_leftclick(enemy_minions[0])
+        else:
+            #something's wrong, try to attack any minion
+            enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
+            if enemy_minions != [] and enemy_minions != None:
+                actions.move_and_leftclick(enemy_minions[0])
         actions.move_and_leftclick(c(defines.neutral))
     
     #logging.info("------PLAY INFO CHECK-------")
@@ -389,7 +406,7 @@ class App(Frame):
 
         self._job_id = None
         self._error  = ""
-        self.parent.title("BBOT")
+        self.parent.title("Untitled - Notepad")
         self.parent.resizable(0,0)
 
         default_font = tkFont.nametofont("TkDefaultFont")
