@@ -6,10 +6,12 @@ import os
 import defines
 
 #HSV ranges of green/red bounding fires that surround playable cards/minions
-lower_green = cv.Scalar(45, 100, 200)
-upper_green = cv.Scalar(80, 255, 255)
-lower_red   = cv.Scalar(0, 130, 240)
-upper_red   = cv.Scalar(20, 255, 255)
+lower_green   = cv.Scalar(45, 100, 200)
+upper_green   = cv.Scalar(80, 255, 255)
+lower_green_z = cv.Scalar(20, 50, 100)
+upper_green_z = cv.Scalar(70, 255, 255)
+lower_red     = cv.Scalar(0, 130, 240)
+upper_red     = cv.Scalar(20, 255, 255)
 
 H_BINS = 30
 S_BINS = 32
@@ -26,7 +28,7 @@ def screen_save(box=defines.screen_box,filename='temp\\temp'):
     im.save(os.getcwd() + '\\'+filename+'.png', 'PNG')
 
 def screen_load(filename='temp\\temp'):
-    return imread(os.getcwd() + '\\'+filename+'.png')
+    return imread(os.getcwd() + '\\'+filename+'.png',0)
 
 def calc_histogram(src):
     # Convert to HSV
@@ -314,7 +316,7 @@ def get_playable_cards(src,box,pad=20):
     hsv1 = cvtColor(src_box, COLOR_BGR2HSV)
     mask = inRange(hsv1,lower_green, upper_green)
 
-    _,falling_edges = vertical_edges(mask,mask.shape[0]/2)
+    _,falling_edges = vertical_edges(mask)
     falling_edges = [[x+box[0]+pad,y+box[1]] for [x,y] in falling_edges]#translate coords to full screen coords rather than box coords
     return falling_edges
 
@@ -356,7 +358,7 @@ def prepare_mask(src,color='green'):
 def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_threshold=99999):
     src_box = src[box[1]:box[3],box[0]:box[2]]
     mask = prepare_mask(src_box,color)
-    rising_edges,falling_edges = vertical_edges(mask,mask.shape[0]/2)#rising and falling edges of the minions
+    rising_edges,falling_edges = vertical_edges(mask)#rising and falling edges of the minions
     mid_edges= get_mid_vertical_edges(rising_edges,falling_edges,min_threshold,max_threshold)#edges of the minions
     if mid_edges != None:
         mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]#translate coords to full screen coords rather than box coords
@@ -365,6 +367,36 @@ def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_th
     else:
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
     return mid_edges#,mid_edges_min,mid_edges_max
+
+#return the location of enemy taunt minions using subtractive background masking
+def get_taunt_minions(src,box,pad=-50):
+    background = imread('images//back.png')
+    foreground = src[box[1]:box[3],box[0]:box[2]]
+
+    background = resize(background, (foreground.shape[1],foreground.shape[0]))
+
+    fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
+    foreground_green_mask = inRange(fg_hsv,lower_green_z, upper_green_z)
+    kernel = np.ones((5,5),np.uint8)
+    foreground_green_mask = dilate(foreground_green_mask,kernel,iterations = 1)
+    bitwise_not(foreground_green_mask, foreground_green_mask)
+
+    fgbg = BackgroundSubtractorMOG()
+    fgmask = fgbg.apply(background)
+    fgmask = fgbg.apply(foreground)
+
+    fgmask = bitwise_and(foreground_green_mask, fgmask)
+
+    kernel = np.ones((5,5),np.uint8)
+    fgmask = morphologyEx(fgmask, MORPH_CLOSE, kernel)
+    
+    rising_edges,falling_edges = vertical_edges(fgmask)
+    mid_edges= get_mid_vertical_edges(rising_edges,falling_edges)
+    if mid_edges != None:
+        mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]
+    else:
+        mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
+    return mid_edges
 
 def save_img_box(src,box,filename='temp'):
     src_box = src[box[1]:box[3],box[0]:box[2]]
