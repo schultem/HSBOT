@@ -58,6 +58,7 @@ def select():
     global NEW_GAME
     NEW_GAME = True
     actions.move_and_leftclick(c(defines.confirm_hand_button))
+    actions.move_and_leftclick(c(defines.neutral))
 def wait():
     pass
 def player():
@@ -120,26 +121,27 @@ def player():
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
         if enemy_minions != []:
             e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
-        else:
-            e_m = []
+
         if enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[e_m])
         elif enemy != [] and enemy != None:
             actions.move_and_leftclick(c(defines.opponent_hero))
         else:
             #something's wrong, try to attack any minion
+            actions.pause_pensively(6)
             enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
             if enemy_minions != [] and enemy_minions != None:
                 actions.move_and_leftclick(enemy_minions[0])
             else:
                 actions.pause_pensively(6)
         actions.move_and_leftclick(c(defines.neutral_minion))
-        actions.pause_pensively(0.50)
+        actions.pause_pensively(1)
         src = vision.screen_cap()
         player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     
     #logging.info("---ATTACK WITH CHARACTER---")
-    actions.move_and_leftclick(c(defines.neutral))
+    actions.move_and_leftclick(c(defines.neutral_minion))
+    actions.pause_pensively(0.25)
     src = vision.screen_cap()
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
     if player_attack != [] and player_attack != None:
@@ -153,20 +155,21 @@ def player():
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
         if enemy_minions != []:
             e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
-        else:
-            e_m = []
+
         if enemy_minions != [] and enemy_minions != None:
             actions.move_and_leftclick(enemy_minions[e_m])
         elif enemy != [] and enemy != None:
             actions.move_and_leftclick(c(defines.opponent_hero))
         else:
             #something's wrong, try to attack any minion
+            actions.pause_pensively(6)
             enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
             if enemy_minions != [] and enemy_minions != None:
                 actions.move_and_leftclick(enemy_minions[0])
         actions.move_and_leftclick(c(defines.neutral))
     
     #logging.info("------PLAY INFO CHECK-------")
+    actions.move_and_leftclick(c(defines.neutral))
     actions.pause_pensively(2)
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
@@ -190,6 +193,8 @@ def defeat():
 def error():
     #logging.info("Error: Clicking OK in error message")
     actions.move_and_leftclick(c(defines.error))
+def rank():
+    actions.move_and_leftclick(c(defines.neutral))
 
 states = {
     defines.State.DESKTOP  :desktop,
@@ -204,6 +209,7 @@ states = {
     defines.State.VICTORY  :victory,
     defines.State.DEFEAT   :defeat,
     defines.State.ERROR    :error,
+    defines.State.RANK     :rank,
 }
 
 class GameLogicThread(threading.Thread):
@@ -225,7 +231,8 @@ class GameLogicThread(threading.Thread):
                       8:'opponent turn',
                       9:'waiting',
                       10:'waiting',
-                      11:'error'
+                      11:'error',
+                      12:'ramk'
                      }
     def stop(self):
         self._stop.set()
@@ -406,7 +413,7 @@ class App(Frame):
 
         self._job_id = None
         self._error  = ""
-        self.parent.title("Untitled - Notepad")
+        self.parent.title(defines.titles[randint(0,len(defines.titles)-1)])
         self.parent.resizable(0,0)
 
         default_font = tkFont.nametofont("TkDefaultFont")
