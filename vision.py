@@ -8,10 +8,12 @@ import defines
 #HSV ranges of green/red bounding fires that surround playable cards/minions
 lower_green   = cv.Scalar(45, 100, 200)
 upper_green   = cv.Scalar(80, 255, 255)
-lower_green_z = cv.Scalar(20, 50, 100)
+lower_green_z = cv.Scalar(20, 50,  100)   #z colors are a wider range, initially made when masking green and red over taunt minions
 upper_green_z = cv.Scalar(70, 255, 255)
-lower_red     = cv.Scalar(0, 130, 240)
+lower_red     = cv.Scalar(0,  130, 240)
 upper_red     = cv.Scalar(20, 255, 255)
+lower_red_z   = cv.Scalar(0,  50,  100)
+upper_red_z   = cv.Scalar(20, 255, 255)
 
 H_BINS = 30
 S_BINS = 32
@@ -372,20 +374,28 @@ def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_th
 def get_taunt_minions(src,box,pad=-50):
     background = imread('images//back.png')
     foreground = src[box[1]:box[3],box[0]:box[2]]
-
     background = resize(background, (foreground.shape[1],foreground.shape[0]))
 
     fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
+
     foreground_green_mask = inRange(fg_hsv,lower_green_z, upper_green_z)
     kernel = np.ones((5,5),np.uint8)
     foreground_green_mask = dilate(foreground_green_mask,kernel,iterations = 1)
     bitwise_not(foreground_green_mask, foreground_green_mask)
 
+    foreground_red_mask = inRange(fg_hsv,lower_red_z, upper_red_z)
+    kernel = np.ones((5,5),np.uint8)
+    foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
+    bitwise_not(foreground_red_mask, foreground_red_mask)
+
     fgbg = BackgroundSubtractorMOG()
     fgmask = fgbg.apply(background)
     fgmask = fgbg.apply(foreground)
-
+    #imwrite(os.getcwd() + '\\mask_fg.png', fgmask)
+    #imwrite(os.getcwd() + '\\mask_green.png', foreground_green_mask)
+    #imwrite(os.getcwd() + '\\mask_red.png', foreground_red_mask)
     fgmask = bitwise_and(foreground_green_mask, fgmask)
+    fgmask = bitwise_and(foreground_red_mask, fgmask)
 
     kernel = np.ones((5,5),np.uint8)
     fgmask = morphologyEx(fgmask, MORPH_CLOSE, kernel)
