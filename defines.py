@@ -70,6 +70,7 @@ bnet_play_button          = [282,966]
 bnet_go_online_button     = [1820,60]
 bnet_accept_pw_button     = [100,290]
 bnet_launch_error_button  = [60,120]
+main_screen_splash        = [690,536]
 
 ############
 # INFO BOX #
@@ -86,7 +87,7 @@ enemy_minions_box_taunts    = (475,487,1445,500)
 reduced_enemy_minions_box   = (421,316,1440,332)
 reduced_opponent_box1       = (877,128,913,142)
 reduced_opponent_box2       = (1000,128,1037,137)
-rank                        = (800,330,1130,860)
+player_minion_data          = (469,622,1440,653)
 
 state_box =[(0,1037,1920,1080),   #deskop
             (684,189,1214,676),   #home
@@ -112,7 +113,7 @@ state_box =[(0,1037,1920,1080),   #deskop
 DECKS_TO_USE = [0,1,2,3,4,5,6,7,8]
 
 class State:
-    DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR, RANK = range(0,13)
+    DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR, RANK, PLAYER_GREEN = range(0,14)
 
 state_dict = {
               'desktop':0,
@@ -125,7 +126,7 @@ state_dict = {
               'player_turn':7,
               'player_turn2':7,
               'player_turn3':7,
-              'player_turn_green':7,
+              #'player_turn_green':7,
               'enemy_turn':8,
               'enemy_turn2':8,
               'enemy_turn3':8,
@@ -133,7 +134,8 @@ state_dict = {
               'gold':9,
               'defeat':10,
               'error':11,
-              'rank':12
+              'rank':12,
+              'player_turn_green':13,
              }
 
 titles = ["Untitled - Notepad","Administrator: C:\Windows\system32\cmd.exe","Untitled(100%) - Paint.NET v3.5.11","Mozilla Firefox","MySQL Command Line Client","GNU Image Manipulation Program"]
