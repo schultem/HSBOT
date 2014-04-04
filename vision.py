@@ -4,16 +4,27 @@ import ImageGrab  #PIL for python 2.7
 import numpy as np#numpy for python 2.7
 import os
 import defines
+from pytesser import *
 
 #HSV ranges of green/red bounding fires that surround playable cards/minions
-lower_green   = cv.Scalar(45, 100, 200)
-upper_green   = cv.Scalar(80, 255, 255)
-lower_green_z = cv.Scalar(20, 50,  100)   #z colors are a wider range, initially made when masking green and red over taunt minions
-upper_green_z = cv.Scalar(70, 255, 255)
-lower_red     = cv.Scalar(0,  130, 240)
-upper_red     = cv.Scalar(20, 255, 255)
-lower_red_z   = cv.Scalar(0,  50,  100)
-upper_red_z   = cv.Scalar(20, 255, 255)
+#suffix _z is a wider range for masking colors over taunts
+#suffix _c is a smaller range for masking card attack/defense data
+lower_green    = cv.Scalar(45, 100, 200)
+upper_green    = cv.Scalar(80, 255, 255)
+lower_green_z  = cv.Scalar(20, 50,  100)
+upper_green_z  = cv.Scalar(70, 255, 255)
+lower_green_cd = cv.Scalar(55, 240, 200)
+upper_green_cd = cv.Scalar(65, 255, 255)
+lower_red      = cv.Scalar(0,  130, 240)
+upper_red      = cv.Scalar(20, 255, 255)
+lower_red_z    = cv.Scalar(0,  50,  100)
+upper_red_z    = cv.Scalar(20, 255, 255)
+lower_red_cd   = cv.Scalar(0,  225, 225)
+upper_red_cd   = cv.Scalar(10, 255, 255)
+lower_white_cd = cv.Scalar(0,  0,   225)
+upper_white_cd = cv.Scalar(1,  1,   255)
+lower_white_cd_war = cv.Scalar(9,  50,   200)
+upper_white_cd_war = cv.Scalar(12, 55,   255)
 
 H_BINS = 30
 S_BINS = 32
@@ -391,9 +402,7 @@ def get_taunt_minions(src,box,pad=-50):
     fgbg = BackgroundSubtractorMOG()
     fgmask = fgbg.apply(background)
     fgmask = fgbg.apply(foreground)
-    #imwrite(os.getcwd() + '\\mask_fg.png', fgmask)
-    #imwrite(os.getcwd() + '\\mask_green.png', foreground_green_mask)
-    #imwrite(os.getcwd() + '\\mask_red.png', foreground_red_mask)
+
     fgmask = bitwise_and(foreground_green_mask, fgmask)
     fgmask = bitwise_and(foreground_red_mask, fgmask)
 
@@ -408,6 +417,50 @@ def get_taunt_minions(src,box,pad=-50):
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
     return mid_edges
 
+def read_card_data(src,box):
+    src_box = src[box[1]:box[3],box[0]:box[2]]
+    hsv = cvtColor(src_box, COLOR_BGR2HSV)
+    #kernel = np.ones((2,2),np.uint8)
+
+    green_mask     = inRange(hsv,lower_green_cd, upper_green_cd)
+    red_mask       = inRange(hsv,lower_red_cd, upper_red_cd)
+    white_mask     = inRange(hsv,lower_white_cd, upper_white_cd)
+    white_mask_war = inRange(hsv,lower_white_cd_war, upper_white_cd_war)
+    total_mask = bitwise_or(green_mask, red_mask)
+    total_mask = bitwise_or(total_mask, white_mask)
+    total_mask = bitwise_or(total_mask, white_mask_war)
+    #total_mask = morphologyEx(total_mask, MORPH_OPEN, kernel)
+    #total_mask = morphologyEx(total_mask, MORPH_CLOSE, kernel)
+    #total_mask = dilate(total_mask,kernel,iterations = 1)
+    imwrite(os.getcwd() + '\\temp1.png', src_box)
+    #imwrite(os.getcwd() + '\\temp2.png', green_mask)
+    #imwrite(os.getcwd() + '\\temp3.png', red_mask)
+    #imwrite(os.getcwd() + '\\temp4.png', white_mask)
+    imwrite(os.getcwd() + '\\temp5.png', total_mask)
+    
+    #convert opencv black and white np to PIL image
+    total_mask = np_to_img(total_mask)
+    im = Image.fromstring("L", cv.GetSize(total_mask), total_mask.tostring())
+    
+    #ocr
+    text = image_to_string(im)
+    print text
+    #remove non numeric chars
+    text = ''.join(ch for ch in text if (ch.isdigit() or ch=='I' or ch=="l" or ch==' '))
+    txt_filter=""
+    for ch in text:
+        if ch=="I":
+            txt_filter+="1"
+        elif ch=="l":
+            print True
+            txt_filter+="1"
+        #elif ch==";":
+        #    txt_filter+="1"
+        else:
+            txt_filter+=ch
+
+    return txt_filter
+    
 def save_img_box(src,box,filename='temp'):
     src_box = src[box[1]:box[3],box[0]:box[2]]
     imwrite(os.getcwd() + '\\'+filename+'.png', src_box)
