@@ -2,20 +2,31 @@ import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
 
-def leftClick():
-    pause_pensively(0.1)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-    time.sleep(.1)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
-    pause_pensively(0.1)
-	
-def leftDown():
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-    time.sleep(.1)
+def leftClick(click=True):
+    if click:
+        pause_pensively(0.1)
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
+        time.sleep(0.1)
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
+        pause_pensively(0.1)
 
-def leftUp():
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
-    time.sleep(.1)
+def rightClick(click=True):
+    if click:
+        pause_pensively(0.1)
+        win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN,0,0)
+        time.sleep(0.1)
+        win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP,0,0)
+        pause_pensively(0.1)
+	
+def leftDown(click=True):
+    if click:
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
+        time.sleep(.1)
+
+def leftUp(click=True):
+    if click:
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
+        time.sleep(.1)
 
 def setCursorPos(coord):
     win32api.SetCursorPos((coord[0],coord[1]))
@@ -29,10 +40,9 @@ def interpCursorPos(coord):
     newpos  = coord_curr
     while(coord_curr[0]!=coord[0] or coord_curr[1]!=coord[1]):        
         coord_curr = getCursorPos()
-        #if the user is moving the mouse, pause a spell and break
+        #if the user is moving the mouse, break
         if coord_curr != newpos:
-            pause_pensively(3)
-            break
+            return False
         if (coord_curr[0]<coord[0]):
             xd=1
         elif (coord_curr[0]>coord[0]):
@@ -50,30 +60,36 @@ def interpCursorPos(coord):
         for i in range(0,20000):    #pause
             i=i+1
     pause_pensively(0.1)
+    return True
 
 def pause_pensively(s):
     time.sleep(s)
 
 def leftclick_drag_and_release(click_coord, release_coord):
-    interpCursorPos(click_coord)
-    leftDown()
-    interpCursorPos(release_coord)
-    leftUp()
+    success = interpCursorPos(click_coord)
+    leftDown(success)
+    success = interpCursorPos(release_coord)
+    leftUp(success)
 
 def leftclick_move_and_leftclick(click_coord, click_coord_2):
-    interpCursorPos(click_coord)
+    success = interpCursorPos(click_coord)
     pause_pensively(0.1)
-    leftClick()
-    interpCursorPos(click_coord_2)
-    leftClick()
+    leftClick(success)
+    success = interpCursorPos(click_coord_2)
+    leftClick(success)
 
 def move_and_leftclick(click_coord):
-    interpCursorPos(click_coord)
-    leftClick()
+    success = interpCursorPos(click_coord)
+    leftClick(success)
+    return success
 
+def move_and_rightclick(click_coord):
+    success = interpCursorPos(click_coord)
+    rightClick(success)
+    return success
 
 def move_cursor(move_coord):
-    interpCursorPos(move_coord)
+    success = interpCursorPos(move_coord)
 
 def get_whndl(window_name):
     whndl = win32gui.FindWindowEx(0, 0, None, window_name)
@@ -227,6 +243,10 @@ def restart_game():
                 pause_pensively(5)
                 
                 reset_game_window()
+                pause_pensively(5)
+                move_and_leftclick(defines.c(defines.main_screen_splash))
+                pause_pensively(2)
+                move_and_leftclick(defines.c(defines.main_screen_splash))
         else:
             foreground_whndl(whndl_error)
             pycwnd_error = make_pycwnd(whndl_error)
