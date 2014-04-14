@@ -16,7 +16,7 @@ screen_box      = (origin[0],origin[1],game_screen_res[0],game_screen_res[1])
 ref_game_screen_res       = [1920,1080] #Scale mouse and info coords relative to this reference.
 ref_origin                = [0,0]       #reference origin
 neutral                   = [1284,894]  #nothing
-neutral_minion            = [911,711]  #nothing while attacking with minions
+neutral_minion            = [910,705]  #nothing while attacking with minions
 
 #scale coords or boxs by the res to reference ratio, use with pair_convert and add origin offset
 def ref(x):
@@ -67,7 +67,7 @@ play_card                 = [[1470,600],[400,600]]
 bnet_games_button         = [173,46]
 bnet_hearthstone_button   = [55,520]
 bnet_play_button          = [282,966]
-bnet_go_online_button     = [1820,60]
+bnet_go_online_button     = [1750,60]
 bnet_accept_pw_button     = [100,290]
 bnet_launch_error_button  = [60,120]
 main_screen_splash        = [690,536]
@@ -82,12 +82,16 @@ enemy_box                   = (910,133,1005,273)
 player_box                  = (910,767,1005,902)
 reduced_player_box          = (917,701,1012,745)
 reduced_player_minions_box  = (421,504,1440,518)
+player_minions_box          = (475,650,1445,680)
+player_minion_data          = (440,625,1440,653)
 reduced_ability_box         = (1066,744,1140,766)
 enemy_minions_box_taunts    = (475,487,1445,500)
+enemy_minions_box           = (470,475,1445,485)
+enemy_minion_data           = (440,438,1440,466)
 reduced_enemy_minions_box   = (421,316,1440,332)
 reduced_opponent_box1       = (877,128,913,142)
 reduced_opponent_box2       = (1000,128,1037,137)
-player_minion_data          = (469,622,1440,653)
+
 
 state_box =[(0,1037,1920,1080),   #deskop
             (684,189,1214,676),   #home
@@ -126,7 +130,6 @@ state_dict = {
               'player_turn':7,
               'player_turn2':7,
               'player_turn3':7,
-              #'player_turn_green':7,
               'enemy_turn':8,
               'enemy_turn2':8,
               'enemy_turn3':8,
