@@ -2,13 +2,25 @@ import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
 
-def leftClick(click=True):
+def leftClick(click=True,coords=False):
     if click:
-        pause_pensively(0.1)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-        time.sleep(0.1)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
-        pause_pensively(0.1)
+        if coords:
+            try:
+                whndl =  get_whndl("Hearthstone")
+                pycwnd = make_pycwnd(whndl)
+                pycwnd_click(pycwnd,coords)
+            except:
+                pause_pensively(0.1)
+                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
+                time.sleep(0.1)
+                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
+                pause_pensively(0.1)
+        else:
+            pause_pensively(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
+            time.sleep(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
+            pause_pensively(0.1)
 
 def rightClick(click=True):
     if click:
@@ -74,13 +86,13 @@ def leftclick_drag_and_release(click_coord, release_coord):
 def leftclick_move_and_leftclick(click_coord, click_coord_2):
     success = interpCursorPos(click_coord)
     pause_pensively(0.1)
-    leftClick(success)
+    leftClick(success,click_coord)
     success = interpCursorPos(click_coord_2)
-    leftClick(success)
+    leftClick(success,click_coord_2)
 
 def move_and_leftclick(click_coord):
     success = interpCursorPos(click_coord)
-    leftClick(success)
+    leftClick(success,click_coord)
     return success
 
 def move_and_rightclick(click_coord):
