@@ -10,6 +10,7 @@ import threading
 import Queue
 import base64
 import qr
+from countdict import countdict
 
 #Store screen captures
 src = None
@@ -17,9 +18,10 @@ src = None
 #pre-calulate sift descriptors
 state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
 character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
-#stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
+stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
 opponent_char=None
 player_char=None
+stage=None
 
 #get monitor resolution
 monitor_x=actions.win32api.GetSystemMetrics(0)
@@ -43,12 +45,15 @@ NEW_GAME = False
 def desktop():
     pass
 def home():
-    success=actions.move_and_leftclick(c(defines.main_menu_play_button))
+    control_success=actions.move_and_leftclick(c(defines.main_menu_play_button))
 def play():
+    global stage_char,player_char
+    stage_char=None
+    player_char=None
     if len(defines.DECKS_TO_USE):
-        success=actions.move_and_leftclick(c(defines.custom_decks_arrow))
-        success=actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
-        success=actions.move_and_leftclick(c(defines.play_button))
+        control_success=actions.move_and_leftclick(c(defines.custom_decks_arrow))
+        control_success=actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
+        control_success=actions.move_and_leftclick(c(defines.play_button))
     actions.pause_pensively(3)
 def queue():
     pass
@@ -57,37 +62,36 @@ def versus():
 def select():
     global NEW_GAME
     NEW_GAME = True
-    success=actions.move_and_leftclick(c(defines.confirm_hand_button))
-    success=actions.move_and_leftclick(c(defines.neutral))
+    control_success=actions.move_and_leftclick(c(defines.confirm_hand_button))
+    control_success=actions.move_and_leftclick(c(defines.neutral))
 def wait():
     pass
 def player():
-    global src#,character_descs,stage_descs
-    global NEW_GAME,opponent_char,player_char
-    success=True#keep track of whether or not the bot was able to control the mouse.  If not the user is attempting to use it
+    global src
+    global NEW_GAME,opponent_char,player_char,stage
+    control_success=True#keep track of whether or not the bot was able to control the mouse.  If not the user is attempting to use it
     actions.pause_pensively(1)
 
     if NEW_GAME:
-        #logging.info("-------------NEW GAME INFO--------------")
-        #src = vision.screen_cap()
-        #opponent_char=vision.get_image_info_sift(src,character_descs,c(defines.enemy_box))
-        #logging.info("OPPONENT: %s"%(opponent_char))
-        #player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
-        #logging.info("PLAYER:   %s"%(player_char))
-        #logging.info("STAGE:    %s"%(vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))))
+        stage=vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))
         NEW_GAME=False
 
     #logging.info("------PLAY CARDS------")
     src = vision.screen_cap()
-    try:
-        player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
-    except:
-        player_char=None
+    if player_char==None:
+        try:
+            player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
+        except:
+            player_char=None
+    if stage==None:
+        try:
+            stage=vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))
+        except:
+            stage=None
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-    while(player_cards != [] and success):
-
+    while(player_cards != [] and control_success):
         actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,1)]))
-        success=actions.move_and_leftclick(c(defines.neutral_minion))
+        control_success=actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
         player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
@@ -96,23 +100,23 @@ def player():
     actions.pause_pensively(0.50)
     src = vision.screen_cap()
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    if player_ability != [] and player_ability != None and player_char != None and success:
+    if player_ability != [] and player_ability != None and player_char != None and control_success:
         if player_char == 'mage':
-            success=actions.move_and_leftclick(c(defines.player_ability))
-            success=actions.move_and_leftclick(c(defines.opponent_hero))
+            control_success=actions.move_and_leftclick(c(defines.player_ability))
+            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
         elif player_char == 'priest':
-            success=actions.move_and_leftclick(c(defines.player_ability))
-            success=actions.move_and_leftclick(c(defines.player_hero))
+            control_success=actions.move_and_leftclick(c(defines.player_ability))
+            control_success=actions.move_and_leftclick(c(defines.player_hero))
         else:
-            success=actions.move_and_leftclick(c(defines.player_ability))
-            success=actions.move_and_leftclick(c(defines.neutral_minion))
+            control_success=actions.move_and_leftclick(c(defines.player_ability))
+            control_success=actions.move_and_leftclick(c(defines.neutral_minion))
 
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
-    while player_minions != [] and player_minions != None and success:
+    while player_minions != [] and player_minions != None and control_success:
         p_m = randint(0,len(player_minions)-1) #attack with a random minion
-        success=actions.move_and_leftclick(player_minions[p_m])
+        control_success=actions.move_and_leftclick(player_minions[p_m])
         actions.move_cursor([player_minions[p_m][0],player_minions[p_m][1]+130])
         actions.pause_pensively(0.35)
         src = vision.screen_cap()
@@ -124,29 +128,29 @@ def player():
             e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
 
         if enemy_minions != [] and enemy_minions != None:
-            success=actions.move_and_leftclick(enemy_minions[e_m])
+            control_success=actions.move_and_leftclick(enemy_minions[e_m])
         elif enemy != [] and enemy != None:
-            success=actions.move_and_leftclick(c(defines.opponent_hero))
+            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
         else:
             #something's wrong, try to attack any minion
             actions.pause_pensively(6)
             enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
             if enemy_minions != [] and enemy_minions != None:
-                success=actions.move_and_leftclick(enemy_minions[0])
+                control_success=actions.move_and_leftclick(enemy_minions[0])
             else:
                 actions.pause_pensively(6)
-        success=actions.move_and_rightclick(c(defines.neutral_minion))
+        control_success=actions.move_and_rightclick(c(defines.neutral_minion))
         actions.pause_pensively(1)
         src = vision.screen_cap()
         player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
-    
+
     #logging.info("---ATTACK WITH CHARACTER---")
     actions.pause_pensively(0.25)
     src = vision.screen_cap()
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
-    if player_attack != [] and player_attack != None and success:
-        success=actions.move_and_leftclick(c(defines.neutral_minion))
-        success=actions.move_and_leftclick(player_attack[0])
+    if player_attack != [] and player_attack != None and control_success:
+        control_success=actions.move_and_leftclick(c(defines.neutral_minion))
+        control_success=actions.move_and_leftclick(player_attack[0])
         actions.move_cursor([player_attack[0][0],player_attack[0][1]+10])
         actions.pause_pensively(0.35)
         src = vision.screen_cap()
@@ -158,31 +162,30 @@ def player():
             e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
 
         if enemy_minions != [] and enemy_minions != None:
-            success=actions.move_and_leftclick(enemy_minions[e_m])
+            control_success=actions.move_and_leftclick(enemy_minions[e_m])
         elif enemy != [] and enemy != None:
-            success=actions.move_and_leftclick(c(defines.opponent_hero))
+            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
         else:
             #something's wrong, try to attack any minion
             actions.pause_pensively(6)
             enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
             if enemy_minions != [] and enemy_minions != None:
-                success=actions.move_and_leftclick(enemy_minions[0])
-        success=actions.move_and_leftclick(c(defines.neutral))
+                control_success=actions.move_and_leftclick(enemy_minions[0])
+        control_success=actions.move_and_leftclick(c(defines.neutral))
     
     #logging.info("------PLAY INFO CHECK-------")
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
-    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None and success:
+    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None and control_success:
         #logging.info("---END TURN---")
-        success=actions.move_and_leftclick(c(defines.neutral))
+        control_success=actions.move_and_leftclick(c(defines.neutral))
         player_turn_green_check = vision.color_range_reduced_mids(src,c(defines.turn_box),color='green')
-        print player_turn_green_check
         if player_turn_green_check !=[] and player_turn_green_check != None:
-            success=actions.move_and_leftclick(c(defines.turn_button))
-            success=actions.move_and_leftclick(c(defines.turn_button))
-            success=actions.move_and_leftclick(c(defines.neutral))
+            control_success=actions.move_and_leftclick(c(defines.turn_button))
+            control_success=actions.move_and_leftclick(c(defines.turn_button))
+            control_success=actions.move_and_leftclick(c(defines.neutral))
         else:
             actions.pause_pensively(4)
             player_end()
@@ -191,32 +194,32 @@ def opponent():
     pass
 def victory():
     #logging.info("Victory")
-    success=actions.move_and_leftclick(c(defines.neutral))
+    control_success=actions.move_and_leftclick(c(defines.neutral))
 def defeat():
     #logging.info("Defeat")
-    success=actions.move_and_leftclick(c(defines.neutral))
+    control_success=actions.move_and_leftclick(c(defines.neutral))
 def error():
     #logging.info("Error: Clicking OK in error message")
-    success=actions.move_and_leftclick(c(defines.error))
+    control_success=actions.move_and_leftclick(c(defines.error))
 def rank():
-    success=actions.move_and_leftclick(c(defines.neutral))
-    success=actions.move_and_leftclick(c(main_screen_splash))
+    control_success=actions.move_and_leftclick(c(defines.neutral))
+    control_success=actions.move_and_leftclick(c(defines.main_screen_splash))
 def player_end():
     global src#,character_descs,stage_descs
     global NEW_GAME,opponent_char,player_char
 
     #logging.info("------PLAY INFO CHECK-------")
-    success=actions.move_and_leftclick(c(defines.neutral))
+    control_success=actions.move_and_leftclick(c(defines.neutral))
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
 
-    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None and success:
+    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None and control_success:
         #logging.info("---END TURN---")
-        success=actions.move_and_leftclick(c(defines.turn_button))
-        success=actions.move_and_leftclick(c(defines.turn_button))
-        success=actions.move_and_leftclick(c(defines.neutral))
+        control_success=actions.move_and_leftclick(c(defines.turn_button))
+        control_success=actions.move_and_leftclick(c(defines.turn_button))
+        control_success=actions.move_and_leftclick(c(defines.neutral))
 
 states = {
     defines.State.DESKTOP       :desktop,
@@ -268,6 +271,7 @@ class GameLogicThread(threading.Thread):
         self.new_state=0
         self.old_state=0
         self.queue.put("Starting bot")
+        wait_count=0
         while(not self.stopped()):
             #check if battle net is running and Hearthstone is running and shown
             if actions.check_bnet("Battle.net"):
@@ -287,8 +291,8 @@ class GameLogicThread(threading.Thread):
                         if self.new_state == self.old_state and (self.new_state == defines.State.PLAY or self.new_state == defines.State.HOME):
                             #Might have been a connection error.
                             self.queue.put("Must enable at least one custom deck in Options!")
-                            success=actions.move_and_leftclick(c(defines.error))
-                            success=actions.move_and_leftclick(c(defines.neutral))
+                            control_success=actions.move_and_leftclick(c(defines.error))
+                            control_success=actions.move_and_leftclick(c(defines.neutral))
                 
                     except:
                         self.queue.put("Error: Invalid state, starting the bot again may help")
@@ -298,6 +302,15 @@ class GameLogicThread(threading.Thread):
                 self.stop()
 
             self.queue.put(self.state_desc[self.new_state])
+            
+            #check if waiting for a long time, try clicking just in case
+            if self.state_desc[self.new_state]=='waiting':
+                if wait_count >= 10:
+                    control_success=actions.move_and_leftclick(c(defines.neutral))
+                    wait_count=0
+                else:
+                    wait_count+=1
+            
             if self.new_state != defines.State.DESKTOP and not self.stopped():
                 states[self.new_state]()
             elif self.new_state == defines.State.DESKTOP and not self.stopped():
@@ -306,7 +319,7 @@ class GameLogicThread(threading.Thread):
                 if not self.stopped():
                     actions.restart_game()
                     update_resolutions()
-                    success=actions.move_and_leftclick(c(defines.neutral))
+                    control_success=actions.move_and_leftclick(c(defines.neutral))
             self.old_state=self.new_state
 
 #The GUI
