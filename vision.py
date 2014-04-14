@@ -5,10 +5,11 @@ import numpy as np#numpy for python 2.7
 import os
 import defines
 from pytesser import *
+from countdict import countdict
 
 #HSV ranges of green/red bounding fires that surround playable cards/minions
 #suffix _z is a wider range for masking colors over taunts
-#suffix _c is a smaller range for masking card attack/defense data
+#suffix _cd is a smaller range for masking card attack/defense data
 lower_green    = cv.Scalar(45, 100, 200)
 upper_green    = cv.Scalar(80, 255, 255)
 lower_green_z  = cv.Scalar(20, 50,  100)
@@ -18,20 +19,24 @@ upper_green_cd = cv.Scalar(65, 255, 255)
 lower_red      = cv.Scalar(0,  130, 240)
 upper_red      = cv.Scalar(20, 255, 255)
 lower_red_z    = cv.Scalar(0,  50,  100)
-upper_red_z    = cv.Scalar(20, 255, 255)
+upper_red_z    = cv.Scalar(23, 255, 255)
 lower_red_cd   = cv.Scalar(0,  225, 225)
 upper_red_cd   = cv.Scalar(10, 255, 255)
 lower_white_cd = cv.Scalar(0,  0,   225)
 upper_white_cd = cv.Scalar(1,  1,   255)
-lower_white_cd_war = cv.Scalar(9,  50,   200)
-upper_white_cd_war = cv.Scalar(12, 55,   255)
+lower_white_cd_war  = cv.Scalar(8,   50,   200)
+upper_white_cd_war  = cv.Scalar(14,  57,   255)
+lower_white_cd_town = cv.Scalar(95,  18,   225)
+upper_white_cd_town = cv.Scalar(98,  22,   255)
 
 H_BINS = 30
 S_BINS = 32
 
+minion_font_mask = imread('images//minion_font_mask.png',0)
+
 #Default to take a screenshot of the whole screen
 def screen_cap(box=defines.screen_box):
-    src_PIL = ImageGrab.grab(defines.screen_box)
+    src_PIL = ImageGrab.grab(box)
     src = np.array(src_PIL) 
     # Convert RGB to BGR 
     return src[:, :, ::-1].copy()
@@ -247,7 +252,10 @@ def get_image_info(src,sigs,box):
         if emd < min_emd:
             min_emd=emd
             min_f = f
-    return min_f[:-4]
+    if min_f == None:
+       return None
+    else:
+       return min_f[:-4]
 
 #returns the most likely matching filename in an images directory
 def get_image_info_sift(src,descs,box):
@@ -260,7 +268,10 @@ def get_image_info_sift(src,descs,box):
         if good > max_good:
             max_good=good
             max_f = f
-    return max_f[:-4]
+    if max_f == None:
+       return None
+    else:
+       return max_f[:-4]
 
 #returns the most likely matching filename in an images directory
 def get_state(src,sigs):
@@ -343,8 +354,8 @@ def get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=0,max_thresh
     #mid_edges_min=[]
     #mid_edges_max=[]
     for i in range(0,len(rising_edges)):
-        if falling_edges[i][0]-rising_edges[i][0] > min_threshold:
-            if falling_edges[i][0]-rising_edges[i][0] < max_threshold:
+        if abs(falling_edges[i][0]-rising_edges[i][0]) > min_threshold:
+            if abs(falling_edges[i][0]-rising_edges[i][0]) < max_threshold:
                 mid_edges.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
         #    else:
         #        mid_edges_max.append([(rising_edges[i][0]+falling_edges[i][0])/2,rising_edges[i][1]])
@@ -381,6 +392,27 @@ def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_th
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
     return mid_edges#,mid_edges_min,mid_edges_max
 
+def get_minions(src,box,pad=-50,min_threshold=35):
+    foreground = src[box[1]:box[3],box[0]:box[2]]
+    fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
+
+    foreground_red_mask = inRange(fg_hsv,lower_red_z, upper_red_z)
+    kernel = np.ones((1,1),np.uint8)
+    foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
+    bitwise_not(foreground_red_mask, foreground_red_mask)
+
+    kernel = np.ones((10,10),np.uint8)
+    foreground_red_mask = morphologyEx(foreground_red_mask, MORPH_CLOSE, kernel)
+    #imwrite("tempmaskminions.png",foreground_red_mask)
+
+    rising_edges,falling_edges = vertical_edges(foreground_red_mask)
+    mid_edges= get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=min_threshold)
+    if mid_edges != None:
+        mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]
+    else:
+        mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
+    return mid_edges
+
 #return the location of enemy taunt minions using subtractive background masking
 def get_taunt_minions(src,box,pad=-50):
     background = imread('images//back.png')
@@ -395,7 +427,7 @@ def get_taunt_minions(src,box,pad=-50):
     bitwise_not(foreground_green_mask, foreground_green_mask)
 
     foreground_red_mask = inRange(fg_hsv,lower_red_z, upper_red_z)
-    kernel = np.ones((5,5),np.uint8)
+    kernel = np.ones((1,1),np.uint8)
     foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
     bitwise_not(foreground_red_mask, foreground_red_mask)
 
@@ -408,7 +440,7 @@ def get_taunt_minions(src,box,pad=-50):
 
     kernel = np.ones((5,5),np.uint8)
     fgmask = morphologyEx(fgmask, MORPH_CLOSE, kernel)
-    
+
     rising_edges,falling_edges = vertical_edges(fgmask)
     mid_edges= get_mid_vertical_edges(rising_edges,falling_edges)
     if mid_edges != None:
@@ -417,26 +449,33 @@ def get_taunt_minions(src,box,pad=-50):
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
     return mid_edges
 
-def read_card_data(src,box):
-    src_box = src[box[1]:box[3],box[0]:box[2]]
+def read_minion_number_data(src,box=None,stage=None):
+    global minion_font_mask
+    if box==None:
+        src_box=src
+    else:
+        src_box = src[box[1]:box[3],box[0]:box[2]]
     hsv = cvtColor(src_box, COLOR_BGR2HSV)
-    #kernel = np.ones((2,2),np.uint8)
 
-    green_mask     = inRange(hsv,lower_green_cd, upper_green_cd)
-    red_mask       = inRange(hsv,lower_red_cd, upper_red_cd)
-    white_mask     = inRange(hsv,lower_white_cd, upper_white_cd)
-    white_mask_war = inRange(hsv,lower_white_cd_war, upper_white_cd_war)
-    total_mask = bitwise_or(green_mask, red_mask)
-    total_mask = bitwise_or(total_mask, white_mask)
-    total_mask = bitwise_or(total_mask, white_mask_war)
-    #total_mask = morphologyEx(total_mask, MORPH_OPEN, kernel)
-    #total_mask = morphologyEx(total_mask, MORPH_CLOSE, kernel)
-    #total_mask = dilate(total_mask,kernel,iterations = 1)
-    imwrite(os.getcwd() + '\\temp1.png', src_box)
-    #imwrite(os.getcwd() + '\\temp2.png', green_mask)
-    #imwrite(os.getcwd() + '\\temp3.png', red_mask)
-    #imwrite(os.getcwd() + '\\temp4.png', white_mask)
-    imwrite(os.getcwd() + '\\temp5.png', total_mask)
+    minion_font_mask = resize(minion_font_mask, (hsv.shape[1],hsv.shape[0]))
+
+    green_mask       = inRange(hsv,lower_green_cd, upper_green_cd)
+    red_mask         = inRange(hsv,lower_red_cd, upper_red_cd)
+    if stage in [None,'jungle','china']:
+        white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
+    elif stage=='war':
+        white_mask       = inRange(hsv,lower_white_cd_war, upper_white_cd_war)
+    elif stage=='town':
+        white_mask       = inRange(hsv,lower_white_cd_town, upper_white_cd_town)
+    else:
+        white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
+
+    total_mask       = bitwise_or(green_mask, red_mask)
+    total_mask       = bitwise_or(total_mask, white_mask)
+    total_mask       = bitwise_or(total_mask, minion_font_mask)
+
+    #imwrite(os.getcwd() + '\\temp1.png', src_box)
+    #imwrite(os.getcwd() + '\\temp5.png', total_mask)
     
     #convert opencv black and white np to PIL image
     total_mask = np_to_img(total_mask)
@@ -444,25 +483,119 @@ def read_card_data(src,box):
     
     #ocr
     text = image_to_string(im)
-    print text
+    #print text
     #remove non numeric chars
-    text = ''.join(ch for ch in text if (ch.isdigit() or ch=='I' or ch=="l" or ch==' '))
+
     txt_filter=""
     for ch in text:
+        if ch=="X":#special character used in minion_font_mask
+            txt_filter+=" "
         if ch=="I":
             txt_filter+="1"
         elif ch=="l":
-            print True
             txt_filter+="1"
-        #elif ch==";":
-        #    txt_filter+="1"
-        else:
+        elif ch=="!":
+            txt_filter+="1"
+        elif ch=="|":
+            txt_filter+="1"
+        elif ch=="o":
+            txt_filter+="0"
+        elif ch=="O":
+            txt_filter+="0"
+        elif ch=="?":
+            txt_filter+="2"
+        elif ch=="S":
+            txt_filter+="8"
+        elif ch=="s":
+            txt_filter+="8"
+        elif ch=="z":
+            txt_filter+="2"
+        elif ch=="Z":
+            txt_filter+="2"
+        elif ch.isdigit():
             txt_filter+=ch
+        else:
+            txt_filter+=' '
 
     return txt_filter
-    
-def save_img_box(src,box,filename='temp'):
-    src_box = src[box[1]:box[3],box[0]:box[2]]
+
+def get_minion_data(box,stage):
+    player_minion_data=[]
+    for i in range(0,5):
+        #src_data = imread('2taunt.png')
+        #src      = src_data[box[1]:box[3],box[0]:box[2]]
+        src = screen_cap(box=box)
+        player_minion_data.append(read_minion_number_data(src,stage=stage))
+    player_minion_data_mode = countdict(player_minion_data).split()
+    if len(player_minion_data_mode)%2==0:
+        return player_minion_data_mode
+    else:
+        return None
+
+#return a dict of all minion data given a data box, a minion box, and a taunt box
+def all_minion_data(src,minion_data_box,minions_box,minions_box_taunts=None,minions_box_playable=None,stage=None):
+    minion_data=get_minion_data(minion_data_box,stage)
+    #print minion_data
+    minion_coords = get_minions(src,minions_box)
+    #print minion_coords
+    if minions_box_taunts!=None:
+        minion_taunts = get_taunt_minions(src,minions_box_taunts)
+    else:
+        minion_taunts=[]
+    #print minion_taunts
+    if minions_box_playable!=None:
+        minions_playable = color_range_reduced_mids(src,minions_box_playable,color='green',min_threshold=45,max_threshold=200)
+    else:
+        minions_playable=[]
+    #print minions_playable
+
+    minions = []
+    minion_ad=0
+    for coord in minion_coords:
+        minion={}
+        minion['coord'] = coord
+
+        if len(minion_taunts):
+            min_coord=9999
+            for t_coord in minion_taunts:
+                if (abs(t_coord[0]-coord[0]) < min_coord):
+                    min_coord=abs(t_coord[0]-coord[0])
+            if min_coord<30:
+                minion['taunt'] = True
+            else:
+                minion['taunt'] = False
+        else:
+            minion['taunt'] = False
+
+        if len(minions_playable):
+            min_coord=9999
+            for t_coord in minions_playable:
+                if (abs(t_coord[0]-coord[0]) < min_coord):
+                    min_coord=abs(t_coord[0]-coord[0])
+            if min_coord<30:
+                minion['playable'] = True
+            else:
+                minion['playable'] = False
+        else:
+            minion['playable'] = False
+
+        minions.append(minion)
+        minion_ad+=1
+
+    if minion_data != None:
+        if len(minion_data) == 2*len(minions):
+            if len(minion_data):
+                for i in range(0,len(minion_coords)):
+                    minions[i]['attack']  = minion_data[2*i]
+                    minions[i]['defense'] = minion_data[2*i+1]
+
+    return minions
+
+def save_img_box(src,box=None,filename='temp'):
+    if box==None:
+        src_box=src
+    else:
+        src_box = src[box[1]:box[3],box[0]:box[2]]
     imwrite(os.getcwd() + '\\'+filename+'.png', src_box)
 
 def np_to_img(src):
