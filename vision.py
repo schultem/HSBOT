@@ -24,10 +24,10 @@ lower_red_cd   = cv.Scalar(0,  225, 225)
 upper_red_cd   = cv.Scalar(10, 255, 255)
 lower_white_cd = cv.Scalar(0,  0,   225)
 upper_white_cd = cv.Scalar(1,  1,   255)
-lower_white_cd_war  = cv.Scalar(8,   50,   200)
-upper_white_cd_war  = cv.Scalar(14,  57,   255)
-lower_white_cd_town = cv.Scalar(95,  18,   225)
-upper_white_cd_town = cv.Scalar(98,  22,   255)
+lower_white_cd_war  = cv.Scalar(9,   50,   100)
+upper_white_cd_war  = cv.Scalar(12,  57,   255)
+lower_white_cd_town = cv.Scalar(94,  18,   100)
+upper_white_cd_town = cv.Scalar(100,  22,   255)
 
 H_BINS = 30
 S_BINS = 32
@@ -392,7 +392,7 @@ def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_th
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
     return mid_edges#,mid_edges_min,mid_edges_max
 
-def get_minions(src,box,pad=-50,min_threshold=35):
+def get_minions(src,box,pad=-50,min_threshold=25):
     foreground = src[box[1]:box[3],box[0]:box[2]]
     fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
 
@@ -400,17 +400,21 @@ def get_minions(src,box,pad=-50,min_threshold=35):
     kernel = np.ones((1,1),np.uint8)
     foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
     bitwise_not(foreground_red_mask, foreground_red_mask)
+    #imwrite("tempmask.png",foreground_red_mask)
 
     kernel = np.ones((10,10),np.uint8)
     foreground_red_mask = morphologyEx(foreground_red_mask, MORPH_CLOSE, kernel)
-    #imwrite("tempmaskminions.png",foreground_red_mask)
+    #imwrite("tempmaskclosed.png",foreground_red_mask)
+    #imwrite("tempmasksrc.png",src)
 
     rising_edges,falling_edges = vertical_edges(foreground_red_mask)
+    #print rising_edges,falling_edges
     mid_edges= get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=min_threshold)
     if mid_edges != None:
         mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]
     else:
         mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
+
     return mid_edges
 
 #return the location of enemy taunt minions using subtractive background masking
@@ -490,6 +494,8 @@ def read_minion_number_data(src,box=None,stage=None):
     for ch in text:
         if ch=="X":#special character used in minion_font_mask
             txt_filter+=" "
+        if ch=="x":#special character used in minion_font_mask
+            txt_filter+=" "
         if ch=="I":
             txt_filter+="1"
         elif ch=="l":
@@ -520,24 +526,183 @@ def read_minion_number_data(src,box=None,stage=None):
     return txt_filter
 
 def get_minion_data(box,stage):
-    player_minion_data=[]
-    for i in range(0,5):
-        #src_data = imread('2taunt.png')
+    potential_data=[]
+    pd_cnt=0
+    for i in range(0,100):
+    
+        #src_data = imread('Hearthstone_Screenshot_4.19.2014.14.59.36.png')
         #src      = src_data[box[1]:box[3],box[0]:box[2]]
         src = screen_cap(box=box)
-        player_minion_data.append(read_minion_number_data(src,stage=stage))
-    player_minion_data_mode = countdict(player_minion_data).split()
-    if len(player_minion_data_mode)%2==0:
-        return player_minion_data_mode
+        player_minion_data=read_minion_number_data(src,stage=stage).split()
+        #print player_minion_data
+        for pdata in player_minion_data:
+            if int(pdata) > 20:#chances are there won't be minions with more than 20 attack
+                player_minion_data_revised=[]
+                for pdata_new in player_minion_data:
+                    if int(pdata_new) > 20:
+                        for ch in pdata_new:
+                            player_minion_data_revised.append(ch)
+                    else:
+                        player_minion_data_revised.append(pdata_new)
+                player_minion_data=player_minion_data_revised
+                break
+               
+        if len(player_minion_data)%2==0:
+            if potential_data == player_minion_data:
+                pd_cnt+=1
+                if pd_cnt==3:
+                    return potential_data
+            else:
+                pd_cnt=0
+                potential_data = player_minion_data
+    
+    return None
+
+def read_white_data(src,box):
+    if box==None:
+        src_box=src
     else:
-        return None
+        src_box = src[box[1]:box[3],box[0]:box[2]]
+    hsv = cvtColor(src_box, COLOR_BGR2HSV)
+    white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
+    
+    src_mask_img = np_to_img(white_mask)
+    im = Image.fromstring("L", cv.GetSize(src_mask_img), src_mask_img.tostring())
+    
+    #ocr
+    text = image_to_string(im)
+    return text
+    
+def minion_data_mask(src,box,stage):
+    if box==None:
+        src_box=src
+    else:
+        src_box = src[box[1]:box[3],box[0]:box[2]]
+    hsv = cvtColor(src_box, COLOR_BGR2HSV)
+
+    green_mask       = inRange(hsv,lower_green_cd, upper_green_cd)
+    red_mask         = inRange(hsv,lower_red_cd, upper_red_cd)
+    if stage in [None,'jungle','china']:
+        white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
+    elif stage=='war':
+        white_mask       = inRange(hsv,lower_white_cd_war, upper_white_cd_war)
+    elif stage=='town':
+        white_mask       = inRange(hsv,lower_white_cd_town, upper_white_cd_town)
+    else:
+        white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
+
+    total_mask = bitwise_or(green_mask, red_mask)
+    total_mask = bitwise_or(total_mask, white_mask)
+    #imwrite('test2.png',white_mask)
+    #imwrite('test3.png',total_mask)
+    #imwrite('test4.png',hsv)
+    return total_mask
+
+def minion_data_to_string(src_mask):
+    #convert opencv black and white np to PIL image
+    src_mask_img = np_to_img(src_mask)
+    im = Image.fromstring("L", cv.GetSize(src_mask_img), src_mask_img.tostring())
+    
+    #ocr
+    text = image_to_string(im)
+    #print text
+    imwrite('test.png',src_mask)
+    if '-1' in text:
+        text="4"
+    #remove non numeric chars
+    txt_filter=""
+    for ch in text:
+        if ch=="X":#special character used in minion_font_mask
+            txt_filter+=" "
+        elif ch=="x":#special character used in minion_font_mask
+            txt_filter+=" "
+        elif ch=="I":
+            txt_filter+="1"
+        elif ch=="l":
+            txt_filter+="1"
+        elif ch=="!":
+            txt_filter+="1"
+        elif ch=="|":
+            txt_filter+="1"
+        elif ch=="(":
+            txt_filter+="1"
+        elif ch==")":
+            txt_filter+="1"
+        elif ch=="{":
+            txt_filter+="1"
+        elif ch=="}":
+            txt_filter+="1"
+        elif ch=="Y":
+            txt_filter+="1"
+        elif ch=="[":
+            txt_filter+="0"
+        elif ch=="o":
+            txt_filter+="0"
+        elif ch=="O":
+            txt_filter+="0"
+        elif ch=="0":
+            txt_filter+="0"
+        elif ch=="?":
+            txt_filter+="2"
+        elif ch=="S":
+            txt_filter+="8"
+        elif ch=="s":
+            txt_filter+="8"
+        elif ch=="z":
+            txt_filter+="2"
+        elif ch=="Z":
+            txt_filter+="2"
+        elif ch.isdigit():
+            txt_filter+=ch
+        else:
+            txt_filter+=' '
+
+    return txt_filter
+
+def get_minion_data_split(boxes,stage):
+    potential_data = []
+    result_data    = []
+    
+    for box in boxes:
+        c_box = defines.c(box) #get a new reference so the defines list isn't permanently changed
+        potential_data.append([])
+        for src_pass in range(0,20):
+            #print c_box
+            src = screen_cap(box=c_box)
+            mask_result = minion_data_mask(src,None,stage)
+            txt_result  = minion_data_to_string(mask_result)
+
+            try:
+                potential_data[-1].append(int(txt_result))
+            except:
+                potential_data[-1].append(' ')
+
+            potential_mode = countdict(potential_data[-1],limit=5)
+
+            if potential_mode >= 0:
+                if potential_data[-1][-1] != '':
+                    result_data.append(potential_data[-1][-1])
+                    break
+
+    return result_data
 
 #return a dict of all minion data given a data box, a minion box, and a taunt box
-def all_minion_data(src,minion_data_box,minions_box,minions_box_taunts=None,minions_box_playable=None,stage=None):
-    minion_data=get_minion_data(minion_data_box,stage)
-    #print minion_data
+#do not defines.c(minion_data_boxes), it is a list of boxes, so it would get permanently changed.
+#Instead get_minion_data_split takes care of the conversion
+def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts=None,minions_box_playable=None,stage=None):
     minion_coords = get_minions(src,minions_box)
     #print minion_coords
+    #cull minion data not close to known minion coords to save time
+    culled_minion_data_boxes = []
+    for box in minion_data_boxes:
+        c_box = defines.c(box) #get a new reference so the defines list isn't permanently changed
+        for minion_coord in minion_coords:
+            if abs((c_box[0]+c_box[2])/2 - minion_coord[0]) <= 50:
+                culled_minion_data_boxes.append(box)
+                break
+    #print culled_minion_data_boxes
+    minion_data=get_minion_data_split(culled_minion_data_boxes,stage)
+    #print minion_data
     if minions_box_taunts!=None:
         minion_taunts = get_taunt_minions(src,minions_box_taunts)
     else:
