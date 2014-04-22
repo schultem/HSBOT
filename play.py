@@ -11,6 +11,7 @@ import Queue
 import base64
 import qr
 from countdict import countdict
+from time import gmtime, strftime
 
 #Store screen captures
 src = None
@@ -30,7 +31,6 @@ defines.screen_box = (0,0,monitor_x,monitor_y)
 
 #Shorter binding for the coord resolution convert function
 def c(var):
-    new = var
     return defines.convert(var,defines.ref)
 
 #Update monitor resolution and game screen location and resolution
@@ -40,7 +40,7 @@ def update_resolutions():
     defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
 
 #Flags
-NEW_GAME = False
+NEW_GAME     = False
 
 def desktop():
     pass
@@ -73,6 +73,7 @@ def player():
     actions.pause_pensively(1)
 
     if NEW_GAME:
+        src = vision.screen_cap()
         stage=vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))
         NEW_GAME=False
 
@@ -110,9 +111,20 @@ def player():
         else:
             control_success=actions.move_and_leftclick(c(defines.player_ability))
             control_success=actions.move_and_leftclick(c(defines.neutral_minion))
-
+        actions.pause_pensively(0.5)
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
+    
+    #if control_success:
+    #    print ''
+    #    enemy_minions = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage)
+    #    for i in range(0,len(enemy_minions)):
+    #        print enemy_minions[i]
+    #    print ""
+    #    player_minions = vision.all_minion_data(src,defines.player_minion_data_split,defines.c(defines.player_minions_box),minions_box_playable=defines.c(defines.reduced_player_minions_box),stage=stage)
+    #    for i in range(0,len(player_minions)):
+    #        print player_minions[i]
+
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     while player_minions != [] and player_minions != None and control_success:
         p_m = randint(0,len(player_minions)-1) #attack with a random minion
@@ -272,6 +284,7 @@ class GameLogicThread(threading.Thread):
         self.old_state=0
         self.queue.put("Starting bot")
         wait_count=0
+        previous_day=0
         while(not self.stopped()):
             #check if battle net is running and Hearthstone is running and shown
             if actions.check_bnet("Battle.net"):
@@ -300,6 +313,29 @@ class GameLogicThread(threading.Thread):
             else:
                 self.queue.put("Error: Battle.net may not be running, please start Battle.net")
                 self.stop()
+              
+            #check and reroll 40 gold quests once per day at reroll time
+            time_str = strftime("%X %d", gmtime())
+            if int(time_str[:2]) == 10 and int(time_str[3:5]) <= 30 and int(time_str[10:])!=previous_day and (self.new_state==defines.State.HOME or self.new_state==defines.State.PLAY) and not self.stopped():
+                self.queue.put('checking quests')
+                if self.new_state==defines.State.PLAY:
+                    control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                    actions.pause_pensively(2)
+                control_success=actions.move_and_leftclick(c(defines.quest_button))
+                actions.pause_pensively(2)
+                src = vision.screen_cap()
+                vision.imwrite('reroll_before.png',src)
+                if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
+                    control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_1))
+                if '40' in vision.read_white_data(src,c(defines.quest_box_2)):
+                    control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_2))
+                if '40' in vision.read_white_data(src,c(defines.quest_box_3)):
+                    control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_3))
+                control_success=actions.move_and_leftclick(c(defines.main_menu_nuetral))
+                self.new_state=defines.State.HOME
+                previous_day=int(time_str[10:])
+                src = vision.screen_cap()
+                vision.imwrite('reroll_after.png',src)
 
             self.queue.put(self.state_desc[self.new_state])
             
