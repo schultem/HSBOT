@@ -31,11 +31,12 @@ def ref(x):
 #A shorter function name to scale coords to the desired screen resolution
 def c(var):
     new = var
-    return convert(var,ref)
+    return convert(new,ref)
 
 ###############
 #MOUSE COOORDS#
 ###############
+main_menu_nuetral         = [1750,600]
 main_menu_play_button     = [952,336]
 main_menu_practice_button = [944,411]
 custom_decks_arrow        = [890,995]
@@ -51,7 +52,11 @@ deck_locations            = {
                             8:[950,750],
                             }
 play_button               = [1400,890]
-
+play_back_button          = [1587,994]
+quest_button              = [534,950]
+reroll_quest_button_1     = [800,786]
+reroll_quest_button_2     = [1046,786]
+reroll_quest_button_3     = [1286,786]
 confirm_hand_button       = [960,862]
 turn_button               = [1552,496]
 player_hero               = [962,838]
@@ -65,7 +70,7 @@ play_card_left            = [400,600]
 play_card_right           = [1470,600]
 play_card                 = [[1470,600],[400,600]]
 bnet_games_button         = [173,46]
-bnet_hearthstone_button   = [55,520]
+bnet_hearthstone_button   = [55,425]
 bnet_play_button          = [282,966]
 bnet_go_online_button     = [1750,60]
 bnet_accept_pw_button     = [100,290]
@@ -75,6 +80,9 @@ main_screen_splash        = [690,536]
 ############
 # INFO BOX #
 ############
+quest_box_1                 = (680,885,750,920)
+quest_box_2                 = (930,885,994,920)
+quest_box_3                 = (1170,885,1236,920)
 stage_box                   = (250,0,720,230)
 hand_box                    = (540,1040,1330,1079)
 turn_box                    = (1455,435,1640,540)
@@ -82,12 +90,14 @@ enemy_box                   = (910,133,1005,273)
 player_box                  = (910,767,1005,902)
 reduced_player_box          = (917,701,1012,745)
 reduced_player_minions_box  = (421,504,1440,518)
-player_minions_box          = (475,650,1445,680)
-player_minion_data          = (440,625,1440,653)
+player_minions_box          = (475,645,1440,680)
+player_minion_data          = (440,625,1440,655)
+player_minion_data_split    = [(485,625,525,655),(550,625,600,655),(630,625,670,655),(690,625,738,655),(760,625,810,655),(830,625,880,655),(900,625,950,655),(970,625,1020,655),(1040,625,1090,655),(1110,625,1155,655),(1188,625,1225,655),(1245,625,1295,655),(1325,625,1370,655),(1395,625,1435,655)]
 reduced_ability_box         = (1066,744,1140,766)
 enemy_minions_box_taunts    = (475,487,1445,500)
-enemy_minions_box           = (470,475,1445,485)
+enemy_minions_box           = (470,470,1440,485)
 enemy_minion_data           = (440,438,1440,466)
+enemy_minion_data_split    = [(485,438,525,466),(550,438,600,466),(630,438,670,466),(690,438,738,466),(760,438,810,466),(830,438,880,466),(900,438,950,466),(970,438,1020,466),(1040,438,1090,466),(1110,438,1155,466),(1188,438,1225,466),(1245,438,1295,466),(1325,438,1370,466),(1395,438,1435,466)]
 reduced_enemy_minions_box   = (421,316,1440,332)
 reduced_opponent_box1       = (877,128,913,142)
 reduced_opponent_box2       = (1000,128,1037,137)
