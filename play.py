@@ -58,7 +58,7 @@ def play():
 def queue():
     pass
 def versus():
-    pass
+    actions.pause_pensively(8)
 def select():
     global NEW_GAME
     NEW_GAME = True
@@ -77,7 +77,7 @@ def player():
         stage=vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))
         NEW_GAME=False
 
-    #logging.info("------PLAY CARDS------")
+    #logging.info("------GET MATCH INFO------")
     src = vision.screen_cap()
     if player_char==None:
         try:
@@ -89,6 +89,8 @@ def player():
             stage=vision.get_image_info_sift(src,stage_descs,c(defines.stage_box))
         except:
             stage=None
+
+    #logging.info("------PLAY CARDS------")
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     while(player_cards != [] and control_success):
         actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,1)]))
@@ -96,6 +98,7 @@ def player():
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
         player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
+    actions.pause_pensively(3)
 
     #logging.info("------PLAY ABILITY------")
     actions.pause_pensively(0.50)
@@ -111,13 +114,13 @@ def player():
         else:
             control_success=actions.move_and_leftclick(c(defines.player_ability))
             control_success=actions.move_and_leftclick(c(defines.neutral_minion))
-        actions.pause_pensively(0.5)
+        actions.pause_pensively(1)
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
     
     #if control_success:
     #    print ''
-    #    enemy_minions = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage)
+    #    enemy_minions = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts_reduced=c(defines.reduced_enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage,reduced_color='red')
     #    for i in range(0,len(enemy_minions)):
     #        print enemy_minions[i]
     #    print ""
@@ -194,7 +197,7 @@ def player():
         #logging.info("---END TURN---")
         control_success=actions.move_and_leftclick(c(defines.neutral))
         player_turn_green_check = vision.color_range_reduced_mids(src,c(defines.turn_box),color='green')
-        if player_turn_green_check !=[] and player_turn_green_check != None:
+        if player_turn_green_check !=[] and player_turn_green_check != None and control_success:
             control_success=actions.move_and_leftclick(c(defines.turn_button))
             control_success=actions.move_and_leftclick(c(defines.turn_button))
             control_success=actions.move_and_leftclick(c(defines.neutral))
@@ -284,7 +287,7 @@ class GameLogicThread(threading.Thread):
         self.old_state=0
         self.queue.put("Starting bot")
         wait_count=0
-        previous_day=0
+        previous_hour=0
         while(not self.stopped()):
             #check if battle net is running and Hearthstone is running and shown
             if actions.check_bnet("Battle.net"):
@@ -315,27 +318,29 @@ class GameLogicThread(threading.Thread):
                 self.stop()
               
             #check and reroll 40 gold quests once per day at reroll time
-            time_str = strftime("%X %d", gmtime())
-            if int(time_str[:2]) == 10 and int(time_str[3:5]) <= 30 and int(time_str[10:])!=previous_day and (self.new_state==defines.State.HOME or self.new_state==defines.State.PLAY) and not self.stopped():
-                self.queue.put('checking quests')
-                if self.new_state==defines.State.PLAY:
-                    control_success=actions.move_and_leftclick(c(defines.play_back_button))
+            if defines.REROLL_QUESTS:
+                time_str = strftime("%X", gmtime())
+                if int(time_str[:2])!=previous_hour and (self.new_state==defines.State.HOME or self.new_state==defines.State.PLAY) and not self.stopped():
+                    self.queue.put('checking quests')
+                    if self.new_state==defines.State.PLAY:
+                        control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                        actions.pause_pensively(2)
+                    control_success=actions.move_and_leftclick(c(defines.quest_button))
                     actions.pause_pensively(2)
-                control_success=actions.move_and_leftclick(c(defines.quest_button))
-                actions.pause_pensively(2)
-                src = vision.screen_cap()
-                vision.imwrite('reroll_before.png',src)
-                if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
-                    control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_1))
-                if '40' in vision.read_white_data(src,c(defines.quest_box_2)):
-                    control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_2))
-                if '40' in vision.read_white_data(src,c(defines.quest_box_3)):
-                    control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_3))
-                control_success=actions.move_and_leftclick(c(defines.main_menu_nuetral))
-                self.new_state=defines.State.HOME
-                previous_day=int(time_str[10:])
-                src = vision.screen_cap()
-                vision.imwrite('reroll_after.png',src)
+                    src = vision.screen_cap()
+                    
+                    if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
+                        vision.imwrite('reroll_before.png',src)
+                        control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_1))
+                        vision.imwrite('reroll_after.png',src)
+                    if '40' in vision.read_white_data(src,c(defines.quest_box_2)):
+                        control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_2))
+                    if '40' in vision.read_white_data(src,c(defines.quest_box_3)):
+                        control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_3))
+                    control_success=actions.move_and_leftclick(c(defines.main_menu_nuetral))
+                    self.new_state=defines.State.HOME
+                    previous_hour=int(time_str[:2])
+                    src = vision.screen_cap()
 
             self.queue.put(self.state_desc[self.new_state])
             
@@ -363,6 +368,33 @@ class App(Frame):
     def change_led_color(self,color,input):
         self.led.configure(background=color,text=input)
 
+    def toggle_quest_reroll(self):
+        if self.quest_button['background'] == "#00ff00":#color is green, so user is disabling
+            self.quest_button.configure(background="#ff0000")
+            defines.REROLL_QUESTS=False
+        else:#color is red, so user is enabling
+            self.quest_button.configure(background="#00ff00")
+            defines.REROLL_QUESTS=True
+        save_config()
+            
+    def toggle_mulligan(self):
+        if self.mulligan_button['background'] == "#00ff00":#color is green, so user is disabling
+            self.mulligan_button.configure(background="#ff0000")
+            defines.MULLIGAN=False
+        else:#color is red, so user is enabling
+            self.mulligan_button.configure(background="#00ff00")
+            defines.MULLIGAN=True
+        save_config()
+            
+    def toggle_random_attack(self):
+        if self.random_attack_button['background'] == "#00ff00":#color is green, so user is disabling
+            self.random_attack_button.configure(background="#ff0000")
+            defines.RANDOM_ATTACKS=False
+        else:#color is red, so user is enabling
+            self.random_attack_button.configure(background="#00ff00")
+            defines.RANDOM_ATTACKS=True
+        save_config()
+
     def config_deckbutton(self,deck):
         deck-=1
         if self.deck_buttons[deck]['background'] == "#00ff00":#color is green, so user is disabling
@@ -371,6 +403,7 @@ class App(Frame):
         else:#color is red, so user is enabling
             self.deck_buttons[deck].configure(background="#00ff00")
             defines.DECKS_TO_USE.append(deck)
+        save_config()
 
     def toggle_deck_button1(self):
         self.config_deckbutton(1)
@@ -412,6 +445,32 @@ class App(Frame):
                 self.deck_buttons[i].configure(background="#00ff00")
             else:
                 self.deck_buttons[i].configure(background="#ff0000")
+
+    def misc(self):
+        deckwin = Toplevel(self)
+        deckwin.resizable(0,0)
+        custom_title = Label(deckwin,text="Toggle options:",font=tkFont.nametofont("TkTextFont"))
+        custom_title.grid(row=0,column=0,columnspan=3)
+        self.quest_button = Button(deckwin,    text="Reroll 40 gold quests  ", command=self.toggle_quest_reroll)
+        self.quest_button.grid(row=1,column=1)
+        if defines.REROLL_QUESTS:
+            self.quest_button.configure(background="#00ff00")
+        else:
+            self.quest_button.configure(background="#ff0000")
+
+        self.mulligan_button = Button(deckwin, text="Mulligan 4+ cost cards", command=self.toggle_mulligan)
+        self.mulligan_button.grid(row=2,column=1)
+        if defines.MULLIGAN:
+            self.mulligan_button.configure(background="#00ff00")
+        else:
+            self.mulligan_button.configure(background="#ff0000")
+
+        self.random_attack_button = Button(deckwin, text="Attack randomly         ", command=self.toggle_random_attack)
+        self.random_attack_button.grid(row=3,column=1)
+        if defines.RANDOM_ATTACKS:
+            self.random_attack_button.configure(background="#00ff00")
+        else:
+            self.random_attack_button.configure(background="#ff0000")
 
     def donate_window(self):
         donatewin = Toplevel(self)
@@ -459,6 +518,13 @@ class App(Frame):
         set_text_newline("")
         set_text_newline("The bot will attempt to restart the game if it closes or disconnects.")
         set_text_newline("")
+        set_text_newline("Configuration:")
+        set_text_newline("  -Reroll 40 gold quests: Check once per hour for new quests and reroll if they are for 40 gold")
+        set_text_newline("  -Mulligan 4+ cost cards: Just as it says")
+        set_text_newline("  -Attack randomly: If this is red (off) the feature will attempt to read the values on all minions and attack enemy taunts using the minimum resources.")
+        set_text_newline("")
+        set_text_newline("Options are saved to a config file.")
+        set_text_newline("")
         set_text_newline("")
         self.txt.config(state="disabled")
         self.txt.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
@@ -475,6 +541,7 @@ class App(Frame):
         self.parent.config(menu=menubar)
         optionsmenu = Menu(menubar, tearoff=0)
         optionsmenu.add_command(label="Custom Decks", command=self.select_decks_to_use)
+        optionsmenu.add_command(label="Misc", command=self.misc)
         optionsmenu.add_separator()
         optionsmenu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="Options", menu=optionsmenu)
@@ -549,10 +616,45 @@ class App(Frame):
             self.logicthread.start()
             self.after(100, self.process_queue)
 
+def save_config():
+    f = open( 'config.txt', 'w' )
+    f.write( 'DECKS_TO_USE          = ' + repr(defines.DECKS_TO_USE)       + '\n' )
+    f.write( 'REROLL_QUESTS         = ' + str(int(defines.REROLL_QUESTS))  + '\n' )
+    f.write( 'MULLIGAN              = ' + str(int(defines.MULLIGAN))       + '\n' )
+    f.write( 'RANDOM_ATTACKS        = ' + str(int(defines.RANDOM_ATTACKS)) + '\n' )
+    f.close()
+
+def load_config():
+    config_file = open( 'config.txt', 'r' )
+    chars = config_file.readline()
+    defines.DECKS_TO_USE = []
+    for ch in chars:
+        if ch.isdigit():
+            defines.DECKS_TO_USE.append(int(ch))
+
+    chars = config_file.readline()
+    for ch in chars:
+        if ch.isdigit():
+            defines.REROLL_QUESTS   = int(ch)
+
+    chars = config_file.readline()
+    for ch in chars:
+        if ch.isdigit():
+            defines.MULLIGAN        = int(ch)
+
+    chars = config_file.readline()
+    for ch in chars:
+        if ch.isdigit():
+            defines.RANDOM_ATTACKS  = int(ch)
+    config_file.close()
+
 def main():
     global src
     global NEW_GAME
     #logging.basicConfig(filename='game.log',level=logging.DEBUG)
+
+    #load config options
+    load_config()
 
     #start the app window
     root = Tk()
