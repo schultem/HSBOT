@@ -193,13 +193,14 @@ def pre_calculate_des(img2):
     return des2
 
 #provide two images and a minimum match count, return true for match, false for no match
-def calc_sift(img1,img2):
+#return average match coordinates
+def calc_sift(img1,img2,ratio=0.7):
     # Initiate SIFT detector
     sift = SIFT()
     
     # find the keypoints and descriptors with SIFT
-    _, des1 = sift.detectAndCompute(img1,None)
-    _, des2 = sift.detectAndCompute(img2,None)
+    kp1, des1 = sift.detectAndCompute(img1,None)
+    kp2, des2 = sift.detectAndCompute(img2,None)
     
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
@@ -211,10 +212,20 @@ def calc_sift(img1,img2):
     # store all the good matches as per Lowe's ratio test.
     good = []
     for m,n in matches:
-        if m.distance < 0.7*n.distance:
+        if m.distance < ratio*n.distance:
             good.append(m)
+            
+    src_pts = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
+    #for pt in src_pts:
+    x_pts = [pt[0][0] for pt in src_pts]
+    y_pts = [pt[0][1] for pt in src_pts]
     
-    return len(good)
+    if len(x_pts) and len(y_pts):
+        match_coord=[int(np.average(x_pts)),int(np.average(y_pts))]
+    else:
+        match_coord=[0,0]
+
+    return len(good),match_coord
     
 #provide two images and a minimum match count, return true for match, false for no match
 def calc_sift_precaculated_src2(src1,des2):
@@ -400,12 +411,12 @@ def get_minions(src,box,pad=-50,min_threshold=25):
     kernel = np.ones((1,1),np.uint8)
     foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
     bitwise_not(foreground_red_mask, foreground_red_mask)
-    #imwrite("tempmask.png",foreground_red_mask)
+    imwrite("tempmask.png",foreground_red_mask)
 
     kernel = np.ones((10,10),np.uint8)
     foreground_red_mask = morphologyEx(foreground_red_mask, MORPH_CLOSE, kernel)
-    #imwrite("tempmaskclosed.png",foreground_red_mask)
-    #imwrite("tempmasksrc.png",src)
+    imwrite("tempmaskclosed.png",foreground_red_mask)
+    imwrite("tempmasksrc.png",src)
 
     rising_edges,falling_edges = vertical_edges(foreground_red_mask)
     #print rising_edges,falling_edges
@@ -689,7 +700,7 @@ def get_minion_data_split(boxes,stage):
 #return a dict of all minion data given a data box, a minion box, and a taunt box
 #do not defines.c(minion_data_boxes), it is a list of boxes, so it would get permanently changed.
 #Instead get_minion_data_split takes care of the conversion
-def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts=None,minions_box_playable=None,stage=None):
+def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts_reduced=None,minions_box_taunts=None,minions_box_playable=None,stage=None,reduced_color=None):
     minion_coords = get_minions(src,minions_box)
     #print minion_coords
     #cull minion data not close to known minion coords to save time
@@ -708,6 +719,14 @@ def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts=None,mi
     else:
         minion_taunts=[]
     #print minion_taunts
+    if minions_box_taunts_reduced!=None and reduced_color!=None:
+        minion_taunts_reduced = color_range_reduced_mids(src,minions_box_taunts_reduced,color=reduced_color,min_threshold=90,max_threshold=200)
+    else:
+        minion_taunts_reduced=[]
+    #print minion_taunts_reduced
+    
+    minion_taunts.extend(minion_taunts_reduced)
+    
     if minions_box_playable!=None:
         minions_playable = color_range_reduced_mids(src,minions_box_playable,color='green',min_threshold=45,max_threshold=200)
     else:
