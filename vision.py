@@ -411,12 +411,12 @@ def get_minions(src,box,pad=-50,min_threshold=25):
     kernel = np.ones((1,1),np.uint8)
     foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
     bitwise_not(foreground_red_mask, foreground_red_mask)
-    imwrite("tempmask.png",foreground_red_mask)
+    #imwrite("tempmask.png",foreground_red_mask)
 
     kernel = np.ones((10,10),np.uint8)
     foreground_red_mask = morphologyEx(foreground_red_mask, MORPH_CLOSE, kernel)
-    imwrite("tempmaskclosed.png",foreground_red_mask)
-    imwrite("tempmasksrc.png",src)
+    #imwrite("tempmaskclosed.png",foreground_red_mask)
+    #imwrite("tempmasksrc.png",src)
 
     rising_edges,falling_edges = vertical_edges(foreground_red_mask)
     #print rising_edges,falling_edges
@@ -617,7 +617,7 @@ def minion_data_to_string(src_mask):
     #ocr
     text = image_to_string(im)
     #print text
-    imwrite('test.png',src_mask)
+    #imwrite('test.png',src_mask)
     if '-1' in text:
         text="4"
     #remove non numeric chars
