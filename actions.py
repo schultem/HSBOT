@@ -1,6 +1,7 @@
 import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
+import vision
 
 def leftClick(click=True,coords=False):
     if click:
@@ -232,22 +233,37 @@ def restart_game():
                 pycwnd = make_pycwnd(whndl)
             
                 #try to log on again
-                pycwnd_click(pycwnd,defines.c(defines.bnet_go_online_button))
+                src = vision.screen_cap()
+                bnet_online_img = vision.imread('images//bnet//bnet_online.png')
+                _, match_coord_online =  vision.calc_sift(src,bnet_online_img,ratio=0.2)
+                move_and_leftclick(match_coord_online)
+                #pycwnd_click(pycwnd,defines.c(defines.bnet_go_online_button))
                 whndl_login = get_whndl("Battle.net Login")
                 if whndl_login != None and whndl_login != 0:
                     #prepare battlenet login window for input
-                    pw_file = open("pw.txt")
-                    pw=pw_file.readline()
-                    pw_file.close()
-                    pycwnd_login = make_pycwnd(whndl_login)
-                    pycwnd_string(pycwnd_login,pw)
+                    #pw_file = open("pw.txt")
+                    #pw=pw_file.readline()
+                    #pw_file.close()
+                    #pycwnd_login = make_pycwnd(whndl_login)
+                    #pycwnd_string(pycwnd_login,pw)
                     pycwnd_click(pycwnd_login,defines.bnet_accept_pw_button)
                     pause_pensively(5)
             
                 #try to start the game
-                pycwnd_click(pycwnd,defines.c(defines.bnet_games_button))
-                pycwnd_click(pycwnd,defines.c(defines.bnet_hearthstone_button))
-                pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
+                src = vision.screen_cap()
+                bnet_games_img    = vision.imread('images//bnet//bnet_games.png')
+                bnet_hsbutton_img = vision.imread('images//bnet//bnet_hsbutton.png')
+                bnet_play_img     = vision.imread('images//bnet//bnet_play.png')
+                _, match_coord_games =  vision.calc_sift(src,bnet_games_img,ratio=0.2)
+                _, match_coord_hs    =  vision.calc_sift(src,bnet_hsbutton_img,ratio=0.2)
+                _, match_coord_play  =  vision.calc_sift(src,bnet_play_img,ratio=0.2)
+                move_and_leftclick(match_coord_games)
+                move_and_leftclick(match_coord_hs)
+                move_and_leftclick(match_coord_play)
+                
+                #pycwnd_click(pycwnd,defines.c(defines.bnet_games_button))
+                #pycwnd_click(pycwnd,defines.c(defines.bnet_hearthstone_button))
+                #pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
             
                 #get battlenet out of the way
                 pause_pensively(1)
