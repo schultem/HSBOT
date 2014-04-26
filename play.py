@@ -41,6 +41,7 @@ def update_resolutions():
 
 #Flags
 NEW_GAME     = False
+THE_COIN     = True
 
 def desktop():
     pass
@@ -58,10 +59,36 @@ def play():
 def queue():
     pass
 def versus():
-    actions.pause_pensively(8)
+    actions.pause_pensively(12)
 def select():
-    global NEW_GAME
+    global NEW_GAME,THE_COIN
     NEW_GAME = True
+
+    if defines.MULLIGAN:
+        src = vision.screen_cap()
+        choose_3=[]
+        choose_4=[]
+        for box in defines.starting_hand_costs_3:
+            choose_3.append(vision.read_white_data(src,c(box)))
+        for box in defines.starting_hand_costs_4:
+            choose_4.append(vision.read_white_data(src,c(box)))
+
+        return_list=[]
+        if '' not in choose_3:
+            THE_COIN=False
+            for choice in range(0,len(choose_3)):
+                if int(choose_3[choice]) >= 4:
+                    coord=defines.starting_hand_costs_3[choice]
+                    return_list.append([coord[2],coord[3]])#return the lower right of the detection box which is over the card to click on
+        elif '' not in choose_4:
+            THE_COIN=True
+            for choice in range(0,len(choose_4)):
+                if int(choose_4[choice]) >= 4:
+                    coord=defines.starting_hand_costs_4[choice]
+                    return_list.append([coord[2],coord[3]])#return the lower right of the detection box which is over the card to click on
+        for coord in return_list:
+            control_success=actions.move_and_leftclick(c(coord))
+
     control_success=actions.move_and_leftclick(c(defines.confirm_hand_button))
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def wait():
@@ -465,7 +492,7 @@ class App(Frame):
         else:
             self.mulligan_button.configure(background="#ff0000")
 
-        self.random_attack_button = Button(deckwin, text="Attack randomly         ", command=self.toggle_random_attack)
+        self.random_attack_button = Button(deckwin, text="Attack taunts randomly", command=self.toggle_random_attack)
         self.random_attack_button.grid(row=3,column=1)
         if defines.RANDOM_ATTACKS:
             self.random_attack_button.configure(background="#00ff00")
