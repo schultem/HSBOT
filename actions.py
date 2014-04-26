@@ -256,7 +256,7 @@ def restart_game():
                 bnet_play_img     = vision.imread('images//bnet//bnet_play.png')
                 _, match_coord_games =  vision.calc_sift(src,bnet_games_img,ratio=0.2)
                 _, match_coord_hs    =  vision.calc_sift(src,bnet_hsbutton_img,ratio=0.2)
-                _, match_coord_play  =  vision.calc_sift(src,bnet_play_img,ratio=0.2)
+                _, match_coord_play  =  vision.calc_sift(src,bnet_play_img,ratio=0.1)
                 move_and_leftclick(match_coord_games)
                 move_and_leftclick(match_coord_hs)
                 move_and_leftclick(match_coord_play)
@@ -271,10 +271,13 @@ def restart_game():
                 pause_pensively(5)
                 
                 reset_game_window()
-                pause_pensively(5)
-                move_and_leftclick(defines.c(defines.main_screen_splash))
-                pause_pensively(2)
-                move_and_leftclick(defines.c(defines.main_screen_splash))
+
+                game_whndl =  get_whndl("Hearthstone")
+                if game_whndl != None and game_whndl != 0:
+                    pause_pensively(5)
+                    move_and_leftclick(defines.c(defines.main_screen_splash))
+                    pause_pensively(2)
+                    move_and_leftclick(defines.c(defines.main_screen_splash))
         else:
             foreground_whndl(whndl_error)
             pycwnd_error = make_pycwnd(whndl_error)
