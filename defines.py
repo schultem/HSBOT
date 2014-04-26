@@ -54,9 +54,13 @@ deck_locations            = {
 play_button               = [1400,890]
 play_back_button          = [1587,994]
 quest_button              = [534,950]
-reroll_quest_button_1     = [800,786]
-reroll_quest_button_2     = [1046,786]
-reroll_quest_button_3     = [1286,786]
+reroll_quest_button_1     = [800,780]
+reroll_quest_button_2     = [1046,780]
+reroll_quest_button_3     = [1286,780]
+
+starting_hand_costs_4     = [(459,350,515,400),(714,350,775,400),(965,350,1030,400),(1224,240,1284,400)]
+starting_hand_costs_3     = [(490,350,555,400),(835,350,900,400),(1180,350,1240,400)]
+
 confirm_hand_button       = [960,862]
 turn_button               = [1552,496]
 player_hero               = [962,838]
