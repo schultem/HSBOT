@@ -55,11 +55,11 @@ def play():
         control_success=actions.move_and_leftclick(c(defines.custom_decks_arrow))
         control_success=actions.move_and_leftclick(c(defines.deck_locations[defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]]))
         control_success=actions.move_and_leftclick(c(defines.play_button))
-    actions.pause_pensively(3)
 def queue():
     pass
 def versus():
-    actions.pause_pensively(12)
+    control_success=actions.move_and_leftclick(c(defines.neutral))
+    actions.pause_pensively(10)
 def select():
     global NEW_GAME,THE_COIN
     NEW_GAME = True
@@ -72,7 +72,8 @@ def select():
             choose_3.append(vision.read_white_data(src,c(box)))
         for box in defines.starting_hand_costs_4:
             choose_4.append(vision.read_white_data(src,c(box)))
-
+        #print choose_3
+        #print choose_4
         return_list=[]
         if '' not in choose_3:
             THE_COIN=False
@@ -83,7 +84,10 @@ def select():
         elif '' not in choose_4:
             THE_COIN=True
             for choice in range(0,len(choose_4)):
-                if int(choose_4[choice]) >= 4:
+                if int(choose_4[choice]) >= 5:
+                    coord=defines.starting_hand_costs_4[choice]
+                    return_list.append([coord[2],coord[3]])#return the lower right of the detection box which is over the card to click on
+                if int(choose_4[choice]) == 1:
                     coord=defines.starting_hand_costs_4[choice]
                     return_list.append([coord[2],coord[3]])#return the lower right of the detection box which is over the card to click on
         for coord in return_list:
@@ -144,16 +148,6 @@ def player():
         actions.pause_pensively(1)
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
-    
-    #if control_success:
-    #    print ''
-    #    enemy_minions = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts_reduced=c(defines.reduced_enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage,reduced_color='red')
-    #    for i in range(0,len(enemy_minions)):
-    #        print enemy_minions[i]
-    #    print ""
-    #    player_minions = vision.all_minion_data(src,defines.player_minion_data_split,defines.c(defines.player_minions_box),minions_box_playable=defines.c(defines.reduced_player_minions_box),stage=stage)
-    #    for i in range(0,len(player_minions)):
-    #        print player_minions[i]
 
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     while player_minions != [] and player_minions != None and control_success:
@@ -167,7 +161,21 @@ def player():
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
         if enemy_minions != []:
-            e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
+            if defines.RANDOM_ATTACKS:
+                e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
+            #else:
+            #    if control_success:
+            #        print ''
+            #        enemy_minions = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts_reduced=c(defines.reduced_enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage,reduced_color='red')
+            #        for i in range(0,len(enemy_minions)):
+            #            print enemy_minions[i]
+            #        print ""
+            #        player_minions = vision.all_minion_data(src,defines.player_minion_data_split,defines.c(defines.player_minions_box),minions_box_playable=defines.c(defines.reduced_player_minions_box),stage=stage)
+            #        for i in range(0,len(player_minions)):
+            #            print player_minions[i]
+            #        for enemy_minion in enemy_minions:
+            #            if enemy_minion['taunt']:
+                            
 
         if enemy_minions != [] and enemy_minions != None:
             control_success=actions.move_and_leftclick(enemy_minions[e_m])
@@ -292,7 +300,7 @@ class GameLogicThread(threading.Thread):
                       1:'home screen',
                       2:'select deck',
                       3:'finding opponent',
-                      4:'waiting',
+                      4:'versus',
                       5:'exchange cards',
                       6:'waiting',
                       7:'bot turn',
@@ -315,81 +323,114 @@ class GameLogicThread(threading.Thread):
         self.queue.put("Starting bot")
         wait_count=0
         previous_hour=0
+        wait_for_start_time=True
         while(not self.stopped()):
-            #check if battle net is running and Hearthstone is running and shown
-            if actions.check_bnet("Battle.net"):
-                if actions.check_game("Hearthstone") == False:
-                    self.new_state=defines.State.DESKTOP
+            current_hour = int(strftime("%X")[:2])
+            if current_hour==0:
+                current_hour=24
+
+            if current_hour==defines.STOP_HOUR and defines.STOP_HOUR!=0 and (self.new_state == defines.State.PLAY or self.new_state == defines.State.HOME):
+                if defines.STOP_HOUR >= 12 and defines.STOP_HOUR != 24:
+                    am_or_pm='pm'
                 else:
-                    update_resolutions()
-                    try:
+                    am_or_pm='am'
+                time_to_stop = defines.STOP_HOUR%12
+                if time_to_stop==0:
+                    time_to_stop=12
+
+                wait_for_start_time=True
+                self.queue.put("stopped at %s o'clock %s"%(time_to_stop,am_or_pm))
+
+            if not wait_for_start_time:
+                #check if battle net is running and Hearthstone is running and shown
+                if actions.check_bnet("Battle.net"):
+                    if actions.check_game("Hearthstone") == False:
+                        self.new_state=defines.State.DESKTOP
+                    else:
+                        update_resolutions()
+                        try:
+                            src = vision.screen_cap()
+                            
+                            state_name = vision.get_state_sift(src,state_descs)
+                            if state_name != None:
+                                self.new_state  = defines.state_dict[state_name]
+                            else:
+                                self.new_state=defines.State.DESKTOP
+                            
+                            if self.new_state == self.old_state and (self.new_state == defines.State.PLAY or self.new_state == defines.State.HOME):
+                                #Might have been a connection error.
+                                self.queue.put("Must enable at least one custom deck in Options!")
+                                control_success=actions.move_and_leftclick(c(defines.error))
+                                control_success=actions.move_and_leftclick(c(defines.neutral))
+                    
+                        except:
+                            self.queue.put("Error: Invalid state, starting the bot again may help")
+                            self.stop()
+                else:
+                    self.queue.put("Error: Battle.net may not be running, please start Battle.net")
+                    self.stop()
+                  
+                #check and reroll 40 gold quests once per day at reroll time
+                if defines.REROLL_QUESTS:
+                    time_str = strftime("%X", gmtime())
+                    if int(time_str[:2])!=previous_hour and (self.new_state==defines.State.HOME or self.new_state==defines.State.PLAY) and not self.stopped():
+                        self.queue.put('checking quests')
+                        if self.new_state==defines.State.PLAY:
+                            control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                            actions.pause_pensively(2)
+                        control_success=actions.move_and_leftclick(c(defines.quest_button))
+                        actions.pause_pensively(2)
                         src = vision.screen_cap()
                         
-                        state_name = vision.get_state_sift(src,state_descs)
-                        if state_name != None:
-                            self.new_state  = defines.state_dict[state_name]
-                        else:
-                            self.new_state=defines.State.DESKTOP
-                        
-                        if self.new_state == self.old_state and (self.new_state == defines.State.PLAY or self.new_state == defines.State.HOME):
-                            #Might have been a connection error.
-                            self.queue.put("Must enable at least one custom deck in Options!")
-                            control_success=actions.move_and_leftclick(c(defines.error))
-                            control_success=actions.move_and_leftclick(c(defines.neutral))
+                        if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
+                            #vision.imwrite('reroll_before.png',src)
+                            control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_1))
+                            #vision.imwrite('reroll_after.png',src)
+                        if '40' in vision.read_white_data(src,c(defines.quest_box_2)):
+                            control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_2))
+                        if '40' in vision.read_white_data(src,c(defines.quest_box_3)):
+                            control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_3))
+                        control_success=actions.move_and_leftclick(c(defines.main_menu_nuetral))
+                        self.new_state=defines.State.HOME
+                        previous_hour=int(time_str[:2])
+                        src = vision.screen_cap()
                 
-                    except:
-                        self.queue.put("Error: Invalid state, starting the bot again may help")
-                        self.stop()
+                self.queue.put(self.state_desc[self.new_state])
+                
+                #check if waiting for a long time, try clicking just in case
+                if self.state_desc[self.new_state]=='waiting':
+                    if wait_count >= 10:
+                        control_success=actions.move_and_leftclick(c(defines.neutral))
+                        wait_count=0
+                    else:
+                        wait_count+=1
+                
+                if self.new_state != defines.State.DESKTOP and not self.stopped():
+                    states[self.new_state]()
+                elif self.new_state == defines.State.DESKTOP and not self.stopped():
+                    #on the desktop for some reason, try to start the game or reshow the window if it's already running
+                    actions.pause_pensively(5)
+                    if not self.stopped():
+                        actions.restart_game()
+                        update_resolutions()
+                        control_success=actions.move_and_leftclick(c(defines.neutral))
+                self.old_state=self.new_state
             else:
-                self.queue.put("Error: Battle.net may not be running, please start Battle.net")
-                self.stop()
-              
-            #check and reroll 40 gold quests once per day at reroll time
-            if defines.REROLL_QUESTS:
-                time_str = strftime("%X", gmtime())
-                if int(time_str[:2])!=previous_hour and (self.new_state==defines.State.HOME or self.new_state==defines.State.PLAY) and not self.stopped():
-                    self.queue.put('checking quests')
-                    if self.new_state==defines.State.PLAY:
-                        control_success=actions.move_and_leftclick(c(defines.play_back_button))
-                        actions.pause_pensively(2)
-                    control_success=actions.move_and_leftclick(c(defines.quest_button))
-                    actions.pause_pensively(2)
-                    src = vision.screen_cap()
-                    
-                    if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
-                        vision.imwrite('reroll_before.png',src)
-                        control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_1))
-                        vision.imwrite('reroll_after.png',src)
-                    if '40' in vision.read_white_data(src,c(defines.quest_box_2)):
-                        control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_2))
-                    if '40' in vision.read_white_data(src,c(defines.quest_box_3)):
-                        control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_3))
-                    control_success=actions.move_and_leftclick(c(defines.main_menu_nuetral))
-                    self.new_state=defines.State.HOME
-                    previous_hour=int(time_str[:2])
-                    src = vision.screen_cap()
-
-            self.queue.put(self.state_desc[self.new_state])
-            
-            #check if waiting for a long time, try clicking just in case
-            if self.state_desc[self.new_state]=='waiting':
-                if wait_count >= 10:
-                    control_success=actions.move_and_leftclick(c(defines.neutral))
-                    wait_count=0
+                if defines.START_HOUR >= 12 and defines.START_HOUR != 24:
+                    am_or_pm='pm'
                 else:
-                    wait_count+=1
-            
-            if self.new_state != defines.State.DESKTOP and not self.stopped():
-                states[self.new_state]()
-            elif self.new_state == defines.State.DESKTOP and not self.stopped():
-                #on the desktop for some reason, try to start the game or reshow the window if it's already running
-                actions.pause_pensively(5)
-                if not self.stopped():
-                    actions.restart_game()
-                    update_resolutions()
-                    control_success=actions.move_and_leftclick(c(defines.neutral))
-            self.old_state=self.new_state
-
+                    am_or_pm='am'
+                time_to_start = defines.START_HOUR%12
+                if time_to_start==0:
+                    time_to_start=12
+                current_hour = int(strftime("%X")[:2])
+                if current_hour==0:
+                    current_hour=24
+                if defines.START_HOUR==current_hour or defines.START_HOUR==0:
+                    wait_for_start_time=False
+                else:
+                    self.queue.put("waiting for %s o'clock %s"%(time_to_start,am_or_pm))
+                    actions.pause_pensively(1)
 #The GUI
 class App(Frame):
     def change_led_color(self,color,input):
@@ -420,6 +461,15 @@ class App(Frame):
         else:#color is red, so user is enabling
             self.random_attack_button.configure(background="#00ff00")
             defines.RANDOM_ATTACKS=True
+        save_config()
+
+    def toggle_move_mouse(self):
+        if self.mouse_button['background'] == "#00ff00":#color is green, so user is disabling
+            self.mouse_button.configure(background="#ff0000")
+            defines.USE_MOUSE=False
+        else:#color is red, so user is enabling
+            self.mouse_button.configure(background="#00ff00")
+            defines.USE_MOUSE=True
         save_config()
 
     def config_deckbutton(self,deck):
@@ -478,26 +528,68 @@ class App(Frame):
         deckwin.resizable(0,0)
         custom_title = Label(deckwin,text="Toggle options:",font=tkFont.nametofont("TkTextFont"))
         custom_title.grid(row=0,column=0,columnspan=3)
-        self.quest_button = Button(deckwin,    text="Reroll 40 gold quests  ", command=self.toggle_quest_reroll)
+        self.quest_button = Button(deckwin,    text="Reroll 40 gold quests  ",font=self.mediumfont, command=self.toggle_quest_reroll)
         self.quest_button.grid(row=1,column=1)
         if defines.REROLL_QUESTS:
             self.quest_button.configure(background="#00ff00")
         else:
             self.quest_button.configure(background="#ff0000")
 
-        self.mulligan_button = Button(deckwin, text="Mulligan 4+ cost cards", command=self.toggle_mulligan)
+        self.mulligan_button = Button(deckwin, text="Mulligan cards             ",font=self.mediumfont, command=self.toggle_mulligan)
         self.mulligan_button.grid(row=2,column=1)
         if defines.MULLIGAN:
             self.mulligan_button.configure(background="#00ff00")
         else:
             self.mulligan_button.configure(background="#ff0000")
 
-        self.random_attack_button = Button(deckwin, text="Attack taunts randomly", command=self.toggle_random_attack)
+        self.random_attack_button = Button(deckwin, state='disabled', text="Attack taunts randomly",font=self.mediumfont, command=self.toggle_random_attack)
         self.random_attack_button.grid(row=3,column=1)
         if defines.RANDOM_ATTACKS:
             self.random_attack_button.configure(background="#00ff00")
         else:
             self.random_attack_button.configure(background="#ff0000")
+
+    def save_mouse_speed(self,speed):
+        defines.MOUSE_SPEED=speed
+        save_config()
+
+    def save_start_hour(self,hour):
+        defines.START_HOUR=int(hour)
+        save_config()
+
+    def save_stop_hour(self,hour):
+        defines.STOP_HOUR=int(hour)
+        save_config()
+
+    def controls(self):
+        deckwin = Toplevel(self)
+        deckwin.resizable(0,0)
+        custom_title = Label(deckwin,text="Control options:",font=tkFont.nametofont("TkTextFont"))
+        custom_title.grid(row=0,column=0,columnspan=3)
+        #self.mouse_button = Button(deckwin,    text="Move mouse         ",font=self.mediumfont, command=self.toggle_move_mouse)
+        #self.mouse_button.grid(row=1,column=0)
+        #if defines.USE_MOUSE:
+        #    self.mouse_button.configure(background="#00ff00")
+        #else:
+        #    self.mouse_button.configure(background="#ff0000")
+
+        mouse_speed_label = Label(deckwin,text="Mouse speed:",font=tkFont.nametofont("TkTextFont"))
+        mouse_speed_label.grid(row=2,column=0)
+        self.mouse_speed_scale = Scale(deckwin, from_=1, to=9,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_mouse_speed)
+        self.mouse_speed_scale.grid(row=2,column=1)
+        self.mouse_speed_scale.set(defines.MOUSE_SPEED)
+
+        start_hour_label = Label(deckwin,text="Hour to start:",font=tkFont.nametofont("TkTextFont"))
+        start_hour_label.grid(row=3,column=0)
+        self.start_hour_scale = Scale(deckwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_start_hour)
+        self.start_hour_scale.grid(row=3,column=1)
+        self.start_hour_scale.set(defines.START_HOUR)
+        
+        stop_hour_label = Label(deckwin,text="Hour to stop:",font=tkFont.nametofont("TkTextFont"))
+        stop_hour_label.grid(row=4,column=0)
+        self.stop_hour_scale = Scale(deckwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_stop_hour)
+        self.stop_hour_scale.grid(row=4,column=1)
+        self.stop_hour_scale.set(defines.STOP_HOUR)
 
     def donate_window(self):
         donatewin = Toplevel(self)
@@ -545,10 +637,15 @@ class App(Frame):
         set_text_newline("")
         set_text_newline("The bot will attempt to restart the game if it closes or disconnects.")
         set_text_newline("")
-        set_text_newline("Configuration:")
+        set_text_newline("Gameplay:")
         set_text_newline("  -Reroll 40 gold quests: Check once per hour for new quests and reroll if they are for 40 gold")
-        set_text_newline("  -Mulligan 4+ cost cards: Just as it says")
+        set_text_newline("  -Mulligan cards: If 3 cards, mulligan 4+ cost, if 4 cards mulligan 1 and 5+ cost.  This is to try to make better use of the coin on the first turn.")
         set_text_newline("  -Attack randomly: If this is red (off) the feature will attempt to read the values on all minions and attack enemy taunts using the minimum resources.")
+        set_text_newline("")
+        set_text_newline("Control options:")
+        set_text_newline("  -Mouse speed: Increase or decrease the mouse speed")
+        set_text_newline("  -Hour to start: Have the bot wait until a certain time to start, 1-24 military time (24=12am). Set the time, then press start, the bot will display what system time it is waiting until. 0 to disable")
+        set_text_newline("  -Hour to stop: Have the bot pause when it reaches a certain time of day, 1-24 military time (24=12am). 0 to disable.  If Hour to start is set, it will start again at that time")
         set_text_newline("")
         set_text_newline("Options are saved to a config file.")
         set_text_newline("")
@@ -566,9 +663,15 @@ class App(Frame):
         self.parent = parent 
         menubar = Menu(self.parent)
         self.parent.config(menu=menubar)
+
+        self.mediumfont = tkFont.nametofont("TkFixedFont")
+        self.mediumfont.configure(size=22)
+        self.mediumfont.configure(family="Helvetica")
+
         optionsmenu = Menu(menubar, tearoff=0)
         optionsmenu.add_command(label="Custom Decks", command=self.select_decks_to_use)
-        optionsmenu.add_command(label="Misc", command=self.misc)
+        optionsmenu.add_command(label="Gameplay", command=self.misc)
+        optionsmenu.add_command(label="Controls", command=self.controls)
         optionsmenu.add_separator()
         optionsmenu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="Options", menu=optionsmenu)
@@ -629,6 +732,9 @@ class App(Frame):
             self.queue_message("")
             self.start_button.config(state='normal')
             self.stop_button.config(state='disabled')
+            self.queue       = Queue.Queue()
+            self.logicthread = GameLogicThread(self.queue)
+            self.queue.put("stopped")
 
     def start_click(self):
         if self._job_id is None:
@@ -649,6 +755,10 @@ def save_config():
     f.write( 'REROLL_QUESTS         = ' + str(int(defines.REROLL_QUESTS))  + '\n' )
     f.write( 'MULLIGAN              = ' + str(int(defines.MULLIGAN))       + '\n' )
     f.write( 'RANDOM_ATTACKS        = ' + str(int(defines.RANDOM_ATTACKS)) + '\n' )
+    f.write( 'USE_MOUSE             = ' + str(int(defines.USE_MOUSE))       + '\n' )
+    f.write( 'MOUSE_SPEED           = ' + str(int(defines.MOUSE_SPEED)) + '\n' )
+    f.write( 'START_HOUR            = ' + str(int(defines.START_HOUR)) + '\n' )
+    f.write( 'STOP_HOUR             = ' + str(int(defines.STOP_HOUR)) + '\n' )
     f.close()
 
 def load_config():
@@ -673,6 +783,35 @@ def load_config():
     for ch in chars:
         if ch.isdigit():
             defines.RANDOM_ATTACKS  = int(ch)
+
+    chars = config_file.readline()
+    for ch in chars:
+        if ch.isdigit():
+            defines.USE_MOUSE  = int(ch)
+
+    chars = config_file.readline()
+    for ch in chars:
+        if ch.isdigit():
+            defines.MOUSE_SPEED  = int(ch)
+    
+    chars = config_file.readline()
+    total_ch=''
+    for ch in chars:
+        if ch.isdigit():
+            total_ch+=ch
+        else:
+            total_ch+=''
+    defines.START_HOUR  = int(total_ch)
+
+    chars = config_file.readline()
+    total_ch=''
+    for ch in chars:
+        if ch.isdigit():
+            total_ch+=ch
+        else:
+            total_ch+=''
+    defines.STOP_HOUR  = int(total_ch)
+
     config_file.close()
 
 def main():
