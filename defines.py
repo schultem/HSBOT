@@ -54,9 +54,9 @@ deck_locations            = {
 play_button               = [1400,890]
 play_back_button          = [1587,994]
 quest_button              = [534,950]
-reroll_quest_button_1     = [800,780]
-reroll_quest_button_2     = [1046,780]
-reroll_quest_button_3     = [1286,780]
+reroll_quest_button_1     = [800,785]
+reroll_quest_button_2     = [1046,785]
+reroll_quest_button_3     = [1286,785]
 
 starting_hand_costs_4     = [(459,350,515,400),(714,350,775,400),(965,350,1030,400),(1224,240,1284,400)]
 starting_hand_costs_3     = [(490,350,555,400),(835,350,900,400),(1180,350,1240,400)]
@@ -132,6 +132,9 @@ DECKS_TO_USE   = [0,1,2,3,4,5,6,7,8]
 REROLL_QUESTS  = True
 MULLIGAN       = True
 RANDOM_ATTACKS = True
+USE_MOUSE      = True
+MOUSE_SPEED    = 5
+START_HOUR     = 2
 
 class State:
     DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR, RANK, PLAYER_GREEN = range(0,14)
