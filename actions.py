@@ -3,25 +3,25 @@ import time
 import defines
 import vision
 
-def leftClick(click=True,coords=False):
+def leftClick(click=True,coords=False,pycmdwnd=False):
     if click:
-        if coords:
-            try:
-                whndl =  get_whndl("Hearthstone")
-                pycwnd = make_pycwnd(whndl)
-                pycwnd_click(pycwnd,coords)
-            except:
-                pause_pensively(0.1)
+        try:
+            if defines.USE_MOUSE:
+                pause_pensively(0.2)
                 win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
                 time.sleep(0.1)
                 win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
-                pause_pensively(0.1)
-        else:
-            pause_pensively(0.1)
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-            time.sleep(0.1)
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
-            pause_pensively(0.1)
+            else:
+                pause_pensively(0.2)
+                if pycmdwnd: 
+                    pycwnd=pycmdwnd
+                else:
+                    whndl =  get_whndl("Hearthstone")
+                    pycwnd = make_pycwnd(whndl)
+                pycwnd_click(pycwnd,coords)
+        except:
+            print 'click error'
+        pause_pensively(0.2)
 
 def rightClick(click=True):
     if click:
@@ -30,7 +30,7 @@ def rightClick(click=True):
         time.sleep(0.1)
         win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP,0,0)
         pause_pensively(0.1)
-	
+
 def leftDown(click=True):
     if click:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
@@ -70,7 +70,7 @@ def interpCursorPos(coord):
             yd=0
         newpos=[coord_curr[0]+xd,coord_curr[1]+yd]
         setCursorPos(newpos)
-        for i in range(0,20000):    #pause
+        for i in range(0,20000*(10-int(defines.MOUSE_SPEED))/5):    #pause
             i=i+1
     pause_pensively(0.1)
     return True
@@ -78,31 +78,40 @@ def interpCursorPos(coord):
 def pause_pensively(s):
     time.sleep(s)
 
-def leftclick_drag_and_release(click_coord, release_coord):
-    success = interpCursorPos(click_coord)
-    leftDown(success)
-    success = interpCursorPos(release_coord)
-    leftUp(success)
+#def leftclick_drag_and_release(click_coord, release_coord):
+#    success = True
+#    success = interpCursorPos(click_coord)
+#    leftDown(success)
+#    success = interpCursorPos(release_coord)
+#    leftUp(success)
 
 def leftclick_move_and_leftclick(click_coord, click_coord_2):
-    success = interpCursorPos(click_coord)
+    success = True
+    if defines.USE_MOUSE and success:
+        success = interpCursorPos(click_coord)
     pause_pensively(0.1)
     leftClick(success,click_coord)
-    success = interpCursorPos(click_coord_2)
+    if defines.USE_MOUSE and success:
+        success = interpCursorPos(click_coord_2)
     leftClick(success,click_coord_2)
 
-def move_and_leftclick(click_coord):
-    success = interpCursorPos(click_coord)
-    leftClick(success,click_coord)
+def move_and_leftclick(click_coord,pycmdwnd=False):
+    success = True
+    if defines.USE_MOUSE and success:
+        success = interpCursorPos(click_coord)
+    
+    leftClick(success,click_coord,pycmdwnd)
     return success
 
 def move_and_rightclick(click_coord):
+    success = True
     success = interpCursorPos(click_coord)
     rightClick(success)
     return success
 
 def move_cursor(move_coord):
-    success = interpCursorPos(move_coord)
+    if defines.USE_MOUSE:
+        success = interpCursorPos(move_coord)
 
 def get_whndl(window_name):
     whndl = win32gui.FindWindowEx(0, 0, None, window_name)
@@ -152,7 +161,6 @@ def check_bnet(title):
         return True
     return False
 
-    
 #Return True if game is not minimized and is running.  Otherwise False
 def check_game(title):
     whndl =  get_whndl(title)
@@ -236,7 +244,7 @@ def restart_game():
                 src = vision.screen_cap()
                 bnet_online_img = vision.imread('images//bnet//bnet_online.png')
                 _, match_coord_online =  vision.calc_sift(src,bnet_online_img,ratio=0.2)
-                move_and_leftclick(match_coord_online)
+                move_and_leftclick(match_coord_online,pycmdwnd=pycwnd)
                 #pycwnd_click(pycwnd,defines.c(defines.bnet_go_online_button))
                 whndl_login = get_whndl("Battle.net Login")
                 if whndl_login != None and whndl_login != 0:
@@ -257,9 +265,9 @@ def restart_game():
                 _, match_coord_games =  vision.calc_sift(src,bnet_games_img,ratio=0.2)
                 _, match_coord_hs    =  vision.calc_sift(src,bnet_hsbutton_img,ratio=0.2)
                 _, match_coord_play  =  vision.calc_sift(src,bnet_play_img,ratio=0.1)
-                move_and_leftclick(match_coord_games)
-                move_and_leftclick(match_coord_hs)
-                move_and_leftclick(match_coord_play)
+                move_and_leftclick(match_coord_games,pycmdwnd=pycwnd)
+                move_and_leftclick(match_coord_hs,pycmdwnd=pycwnd)
+                move_and_leftclick(match_coord_play,pycmdwnd=pycwnd)
                 
                 #pycwnd_click(pycwnd,defines.c(defines.bnet_games_button))
                 #pycwnd_click(pycwnd,defines.c(defines.bnet_hearthstone_button))
