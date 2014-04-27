@@ -1,0 +1,8 @@
+DECKS_TO_USE          = [1]
+REROLL_QUESTS         = 1
+MULLIGAN              = 1
+RANDOM_ATTACKS        = 1
+USE_MOUSE             = 1
+MOUSE_SPEED           = 7
+START_HOUR            = 0
+STOP_HOUR             = 0
