@@ -12,6 +12,7 @@ import base64
 import qr
 from countdict import countdict
 from time import gmtime, strftime
+from itertools import combinations
 
 #Store screen captures
 src = None
@@ -129,7 +130,7 @@ def player():
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
         player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-    actions.pause_pensively(3)
+    #actions.pause_pensively(3)
 
     #logging.info("------PLAY ABILITY------")
     actions.pause_pensively(0.50)
@@ -145,40 +146,88 @@ def player():
         else:
             control_success=actions.move_and_leftclick(c(defines.player_ability))
             control_success=actions.move_and_leftclick(c(defines.neutral_minion))
-        actions.pause_pensively(1)
+        actions.pause_pensively(2)
+
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
-
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     while player_minions != [] and player_minions != None and control_success:
-        p_m = randint(0,len(player_minions)-1) #attack with a random minion
-        control_success=actions.move_and_leftclick(player_minions[p_m])
-        actions.move_cursor([player_minions[p_m][0],player_minions[p_m][1]+130])
-        actions.pause_pensively(0.35)
+        src = vision.screen_cap()
+        enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
+
+        if enemy_minions != []:
+            no_enemy_taunts_detected=False
+            if defines.RANDOM_ATTACKS:
+                e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
+            else:
+                if control_success:
+                    player_minions_data = vision.all_minion_data(src,defines.player_minion_data_split,defines.c(defines.player_minions_box),minions_box_playable=defines.c(defines.reduced_player_minions_box),stage=stage)
+                    enemy_minions_data  = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts_reduced=c(defines.reduced_enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage,reduced_color='red')
+                    print ''
+                    for i in range(0,len(enemy_minions_data)):
+                        print enemy_minions_data[i]
+                    print ""
+                    for i in range(0,len(player_minions_data)):
+                        print player_minions_data[i]
+                        
+                    playable_minions=[]
+                    for player_minion in player_minions_data:
+                        if player_minion['playable'] == True:
+                            playable_minions.append(player_minion)
+                    if playable_minions==[]:
+                        break
+
+                    taunt_minions = []
+                    for enemy_minion in enemy_minions_data:
+                        if enemy_minion['taunt'] == True:
+                            taunt_minions.append(enemy_minion)
+                    subsets=[]
+                    for L in range(0,len(playable_minions)+1):
+                        for subset in combinations(playable_minions,L):
+                            attack_total=0
+                            for individual in subset:
+                                if 'attack' in individual:
+                                    if individual['attack'] != ' ':
+                                        attack_total+=int(individual['attack'])
+
+                            subsets.append([subset,attack_total])
+
+                    min_subset = [False,99]
+                    for taunt_minion in taunt_minions:
+                        if 'defense' in taunt_minion:
+                            if taunt_minion['defense']==' ':
+                                taunt_minion['defense']='5'
+                        else:
+                            taunt_minion['defense']='5'
+
+                        for subset in subsets:
+                            if subset[1]>=taunt_minion['defense'] and (subset[1]<min_subset[1] or len(subset)<len(min_subset)):#attack_total > taunt defense
+                                min_subset=subset
+                        
+                        if min_subset[1]!=99:
+                            p_m = min_subset[0][0]['coord']
+                            e_m = taunt_minion['coord']
+                        else:
+                            p_m = player_minions[randint(0,len(player_minions)-1)] #attack with a random minion
+                            e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
+                    print min_subset
+        else:
+            no_enemy_taunts_detected=True
+            p_m = player_minions[0] #default attack with the leftmost minion if there are no taunts
+
+        control_success=actions.move_and_leftclick(p_m)
+        actions.move_cursor([p_m[0],p_m[1]+130])
+        actions.pause_pensively(0.1)
+
         src = vision.screen_cap()
         enemy=[]
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
-        if enemy_minions != []:
-            if defines.RANDOM_ATTACKS:
-                e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
-            #else:
-            #    if control_success:
-            #        print ''
-            #        enemy_minions = vision.all_minion_data(src,defines.enemy_minion_data_split,defines.c(defines.enemy_minions_box),minions_box_taunts_reduced=c(defines.reduced_enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage,reduced_color='red')
-            #        for i in range(0,len(enemy_minions)):
-            #            print enemy_minions[i]
-            #        print ""
-            #        player_minions = vision.all_minion_data(src,defines.player_minion_data_split,defines.c(defines.player_minions_box),minions_box_playable=defines.c(defines.reduced_player_minions_box),stage=stage)
-            #        for i in range(0,len(player_minions)):
-            #            print player_minions[i]
-            #        for enemy_minion in enemy_minions:
-            #            if enemy_minion['taunt']:
-                            
-
-        if enemy_minions != [] and enemy_minions != None:
-            control_success=actions.move_and_leftclick(enemy_minions[e_m])
+        if enemy_minions != [] and enemy_minions != None and no_enemy_taunts_detected:
+            e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
+        elif enemy_minions != [] and enemy_minions != None:
+            control_success=actions.move_and_leftclick(e_m)
         elif enemy != [] and enemy != None:
             control_success=actions.move_and_leftclick(c(defines.opponent_hero))
         else:
@@ -190,8 +239,10 @@ def player():
             else:
                 actions.pause_pensively(6)
         control_success=actions.move_and_rightclick(c(defines.neutral_minion))
-        actions.pause_pensively(1)
         src = vision.screen_cap()
+        state_name = vision.get_state_sift(src,state_descs,ignore_list=['versus.png','defeat.png','finding_opponent.png','gold.png','opponent_still_choosing.png','starting_hand.png','rank.png','victory.png'])
+        if state_name == 'play':
+            break
         player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
 
     #logging.info("---ATTACK WITH CHARACTER---")
@@ -202,7 +253,7 @@ def player():
         control_success=actions.move_and_leftclick(c(defines.neutral_minion))
         control_success=actions.move_and_leftclick(player_attack[0])
         actions.move_cursor([player_attack[0][0],player_attack[0][1]+10])
-        actions.pause_pensively(0.35)
+        actions.pause_pensively(0.1)
         src = vision.screen_cap()
         enemy=[]
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
@@ -222,7 +273,7 @@ def player():
             if enemy_minions != [] and enemy_minions != None:
                 control_success=actions.move_and_leftclick(enemy_minions[0])
         control_success=actions.move_and_leftclick(c(defines.neutral))
-    
+
     #logging.info("------PLAY INFO CHECK-------")
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
@@ -237,7 +288,7 @@ def player():
             control_success=actions.move_and_leftclick(c(defines.turn_button))
             control_success=actions.move_and_leftclick(c(defines.neutral))
         else:
-            actions.pause_pensively(4)
+            actions.pause_pensively(5)
             player_end()
 
 def opponent():
@@ -267,7 +318,6 @@ def player_end():
 
     if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None and control_success:
         #logging.info("---END TURN---")
-        control_success=actions.move_and_leftclick(c(defines.turn_button))
         control_success=actions.move_and_leftclick(c(defines.turn_button))
         control_success=actions.move_and_leftclick(c(defines.neutral))
 
@@ -383,9 +433,9 @@ class GameLogicThread(threading.Thread):
                         src = vision.screen_cap()
                         
                         if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
-                            #vision.imwrite('reroll_before.png',src)
+                            vision.imwrite('reroll_before.png',src)
                             control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_1))
-                            #vision.imwrite('reroll_after.png',src)
+                            vision.imwrite('reroll_after.png',src)
                         if '40' in vision.read_white_data(src,c(defines.quest_box_2)):
                             control_success=actions.move_and_leftclick(c(defines.reroll_quest_button_2))
                         if '40' in vision.read_white_data(src,c(defines.quest_box_3)):
@@ -542,7 +592,7 @@ class App(Frame):
         else:
             self.mulligan_button.configure(background="#ff0000")
 
-        self.random_attack_button = Button(deckwin, state='disabled', text="Attack taunts randomly",font=self.mediumfont, command=self.toggle_random_attack)
+        self.random_attack_button = Button(deckwin, text="Attack taunts randomly",font=self.mediumfont, command=self.toggle_random_attack)
         self.random_attack_button.grid(row=3,column=1)
         if defines.RANDOM_ATTACKS:
             self.random_attack_button.configure(background="#00ff00")
