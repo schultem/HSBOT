@@ -299,16 +299,17 @@ def get_state(src,sigs):
     return min_f[:-4]
 
 #returns the most likely matching filename in an images directory
-def get_state_sift(src,descs):
+def get_state_sift(src,descs,ignore_list=[]):
     max_good = 0
     max_f = None
 
     for f in descs:
-        box = defines.c(defines.state_box[defines.state_dict[f[:-4]]])
-        good = calc_sift_precaculated_src2(src[box[1]:box[3],box[0]:box[2]],descs[f])
-        if good > max_good:
-            max_good=good
-            max_f = f
+        if f not in ignore_list:
+            box = defines.c(defines.state_box[defines.state_dict[f[:-4]]])
+            good = calc_sift_precaculated_src2(src[box[1]:box[3],box[0]:box[2]],descs[f])
+            if good > max_good:
+                max_good=good
+                max_f = f
     if max_f != None:
         return max_f[:-4]
     else:
