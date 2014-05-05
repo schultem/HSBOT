@@ -124,19 +124,20 @@ def player():
 
     #logging.info("------PLAY CARDS------")
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
-    while(player_cards != [] and control_success):
-        actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,1)]))
+    while player_cards and control_success:
+        actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,len(defines.play_card)-1)]))
         control_success=actions.move_and_leftclick(c(defines.neutral_minion))
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
         player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
+
     #actions.pause_pensively(3)
 
     #logging.info("------PLAY ABILITY------")
     actions.pause_pensively(0.50)
     src = vision.screen_cap()
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    if player_ability != [] and player_ability != None and player_char != None and control_success:
+    if player_ability and player_char and control_success:
         if player_char == 'mage':
             control_success=actions.move_and_leftclick(c(defines.player_ability))
             control_success=actions.move_and_leftclick(c(defines.opponent_hero))
@@ -151,13 +152,17 @@ def player():
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
-    while player_minions != [] and player_minions != None and control_success:
+    while player_minions and control_success:
+        p_m=False
+        no_enemy_taunts_detected=True
+        min_subset = [False,99]
         src = vision.screen_cap()
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
 
-        if enemy_minions != []:
+        if enemy_minions:
             no_enemy_taunts_detected=False
             if defines.RANDOM_ATTACKS:
+                p_m = player_minions[randint(0,len(player_minions)-1)] #attack with a random minion
                 e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
             else:
                 if control_success:
@@ -189,10 +194,10 @@ def player():
                                 if 'attack' in individual:
                                     if individual['attack'] != ' ':
                                         attack_total+=int(individual['attack'])
+                            if subset:
+                                subsets.append([subset,attack_total])
 
-                            subsets.append([subset,attack_total])
-
-                    min_subset = [False,99]
+                    min_subset = [False,99]#TODO: add taunt defense to subsets and maximize between taunts
                     for taunt_minion in taunt_minions:
                         if 'defense' in taunt_minion:
                             if taunt_minion['defense']==' ':
@@ -203,39 +208,42 @@ def player():
                         for subset in subsets:
                             if subset[1]>=taunt_minion['defense'] and (subset[1]<min_subset[1] or len(subset)<len(min_subset)):#attack_total > taunt defense
                                 min_subset=subset
-                        
-                        if min_subset[1]!=99:
-                            p_m = min_subset[0][0]['coord']
-                            e_m = taunt_minion['coord']
-                        else:
-                            p_m = player_minions[randint(0,len(player_minions)-1)] #attack with a random minion
-                            e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
+                                p_m = min_subset[0][0]['coord']
+                                e_m = taunt_minion['coord']
+
+                    if p_m == False:
+                        p_m = player_minions[randint(0,len(player_minions)-1)] #attack with a random minion
+                        e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
                     print min_subset
         else:
             no_enemy_taunts_detected=True
             p_m = player_minions[0] #default attack with the leftmost minion if there are no taunts
 
         control_success=actions.move_and_leftclick(p_m)
-        actions.move_cursor([p_m[0],p_m[1]+130])
-        actions.pause_pensively(0.1)
+        actions.move_cursor([p_m[0],p_m[1]+int(150*float(defines.game_screen_res[1])/float(defines.ref_game_screen_res[1]))])
+        actions.pause_pensively(0.2)
 
         src = vision.screen_cap()
         enemy=[]
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
-        if enemy_minions != [] and enemy_minions != None and no_enemy_taunts_detected:
-            e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
-        elif enemy_minions != [] and enemy_minions != None:
+        if enemy_minions and no_enemy_taunts_detected:#something wrong has happened, try a bunch of stuff
+            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
+            actions.pause_pensively(0.2)
+        elif enemy_minions:
             control_success=actions.move_and_leftclick(e_m)
-        elif enemy != [] and enemy != None:
+            actions.pause_pensively(2.5)
+        elif enemy:
             control_success=actions.move_and_leftclick(c(defines.opponent_hero))
         else:
             #something's wrong, try to attack any minion
             actions.pause_pensively(6)
             enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
-            if enemy_minions != [] and enemy_minions != None:
-                control_success=actions.move_and_leftclick(enemy_minions[0])
+            if enemy_minions:
+                e_m = enemy_minions[randint(0,len(enemy_minions)-1)] #attack a random taunt minion
+                control_success=actions.move_and_leftclick(e_m)
+                actions.pause_pensively(2.5)
             else:
                 actions.pause_pensively(6)
         control_success=actions.move_and_rightclick(c(defines.neutral_minion))
@@ -249,7 +257,7 @@ def player():
     actions.pause_pensively(0.25)
     src = vision.screen_cap()
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
-    if player_attack != [] and player_attack != None and control_success:
+    if player_attack and control_success:
         control_success=actions.move_and_leftclick(c(defines.neutral_minion))
         control_success=actions.move_and_leftclick(player_attack[0])
         actions.move_cursor([player_attack[0][0],player_attack[0][1]+10])
@@ -259,22 +267,23 @@ def player():
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
         enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
         enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
-        if enemy_minions != []:
+        if enemy_minions:
             e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
 
-        if enemy_minions != [] and enemy_minions != None:
+        if enemy_minions:
             control_success=actions.move_and_leftclick(enemy_minions[e_m])
-        elif enemy != [] and enemy != None:
+        elif enemy:
             control_success=actions.move_and_leftclick(c(defines.opponent_hero))
         else:
             #something's wrong, try to attack any minion
             actions.pause_pensively(6)
             enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
-            if enemy_minions != [] and enemy_minions != None:
+            if enemy_minions:
                 control_success=actions.move_and_leftclick(enemy_minions[0])
         control_success=actions.move_and_leftclick(c(defines.neutral))
 
     #logging.info("------PLAY INFO CHECK-------")
+    actions.pause_pensively(0.25)
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
@@ -314,9 +323,9 @@ def player_end():
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
-    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
+    player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=37,max_threshold=200)
 
-    if (player_cards==[] and player_ability ==[] and player_minions ==[]) or player_cards==None or player_ability == None or player_minions == None and control_success:
+    if (player_cards==[] and player_ability ==[] and player_minions ==[]) and control_success:
         #logging.info("---END TURN---")
         control_success=actions.move_and_leftclick(c(defines.turn_button))
         control_success=actions.move_and_leftclick(c(defines.neutral))
