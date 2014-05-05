@@ -327,6 +327,8 @@ def vertical_edges(image,y=None):
             rising_edges.append([i+1,y])
         elif image[y,i] > image[y,i+1]:
             falling_edges.append([i,y])
+        elif i==(image.shape[1]-2) and image[y,i+1]==255:
+            falling_edges.append([i,y])
     
     return rising_edges,falling_edges 
 
@@ -393,10 +395,12 @@ def prepare_mask(src,color='green'):
     return dilation
 
 #Find occurrences of a color across a horizontal strip, add y-pad to the returned coordinates
-def color_range_reduced_mids(src,box,color='green',pad=50,min_threshold=0,max_threshold=99999):
+def color_range_reduced_mids(src,box,color='green',pad=25,min_threshold=0,max_threshold=99999):
     src_box = src[box[1]:box[3],box[0]:box[2]]
     mask = prepare_mask(src_box,color)
+
     rising_edges,falling_edges = vertical_edges(mask)#rising and falling edges of the minions
+    
     mid_edges= get_mid_vertical_edges(rising_edges,falling_edges,min_threshold,max_threshold)#edges of the minions
     if mid_edges != None:
         mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]#translate coords to full screen coords rather than box coords
@@ -432,39 +436,40 @@ def get_minions(src,box,pad=-50,min_threshold=25):
     return mid_edges
 
 #return the location of enemy taunt minions using subtractive background masking
-def get_taunt_minions(src,box,pad=-50):
+def get_taunt_minions(src,taunt_box,pad=-50,min_threshold=20):
     background = imread('images//back.png')
-    foreground = src[box[1]:box[3],box[0]:box[2]]
+    foreground = src[taunt_box[1]:taunt_box[3],taunt_box[0]:taunt_box[2]]
     background = resize(background, (foreground.shape[1],foreground.shape[0]))
-
+    
     fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
-
-    foreground_green_mask = inRange(fg_hsv,lower_green_z, upper_green_z)
-    kernel = np.ones((5,5),np.uint8)
-    foreground_green_mask = dilate(foreground_green_mask,kernel,iterations = 1)
-    bitwise_not(foreground_green_mask, foreground_green_mask)
-
+    
+    #foreground_green_mask = inRange(fg_hsv,lower_green_z, upper_green_z)
+    #kernel = np.ones((5,5),np.uint8)
+    #foreground_green_mask = dilate(foreground_green_mask,kernel,iterations = 1)
+    #bitwise_not(foreground_green_mask, foreground_green_mask)
+    
     foreground_red_mask = inRange(fg_hsv,lower_red_z, upper_red_z)
     kernel = np.ones((1,1),np.uint8)
     foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
     bitwise_not(foreground_red_mask, foreground_red_mask)
-
+    
     fgbg = BackgroundSubtractorMOG()
     fgmask = fgbg.apply(background)
     fgmask = fgbg.apply(foreground)
-
-    fgmask = bitwise_and(foreground_green_mask, fgmask)
+    
+    #fgmask = bitwise_and(foreground_green_mask, fgmask)
     fgmask = bitwise_and(foreground_red_mask, fgmask)
-
+    
     kernel = np.ones((5,5),np.uint8)
     fgmask = morphologyEx(fgmask, MORPH_CLOSE, kernel)
-
+    
     rising_edges,falling_edges = vertical_edges(fgmask)
-    mid_edges= get_mid_vertical_edges(rising_edges,falling_edges)
+    mid_edges= get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=min_threshold)
     if mid_edges != None:
-        mid_edges = [[x+box[0],y+box[1]+pad] for [x,y] in mid_edges]
+        mid_edges = [[x+taunt_box[0],y+taunt_box[1]+pad] for [x,y] in mid_edges]
     else:
-        mid_edges=[[x+box[0],y+box[1]+pad] for [x,y] in rising_edges]
+        mid_edges=[[x+taunt_box[0],y+taunt_box[1]+pad] for [x,y] in rising_edges]
+    
     return mid_edges
 
 def read_minion_number_data(src,box=None,stage=None):
@@ -760,7 +765,7 @@ def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts_reduced
     minion_data=get_minion_data_split(culled_minion_data_boxes,stage)
     #print minion_data
     if minions_box_taunts!=None:
-        minion_taunts = get_taunt_minions(src,minions_box_taunts)
+        minion_taunts = get_taunt_minions(src,minions_box_taunts,min_threshold=20)
     else:
         minion_taunts=[]
     #print minion_taunts
