@@ -7,12 +7,12 @@ def leftClick(click=True,coords=False,pycmdwnd=False):
     if click:
         try:
             if defines.USE_MOUSE:
-                pause_pensively(0.2)
+                pause_pensively(0.1)
                 win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
                 time.sleep(0.1)
                 win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
             else:
-                pause_pensively(0.2)
+                pause_pensively(0.1)
                 if pycmdwnd: 
                     pycwnd=pycmdwnd
                 else:
@@ -21,7 +21,7 @@ def leftClick(click=True,coords=False,pycmdwnd=False):
                 pycwnd_click(pycwnd,coords)
         except:
             print 'click error'
-        pause_pensively(0.2)
+        pause_pensively(0.1)
 
 def rightClick(click=True):
     if click:
