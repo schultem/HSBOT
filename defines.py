@@ -70,9 +70,7 @@ player_deck               = [1622,650]
 opponent_deck             = [1622,335]
 opponent_hand             = [1010,73]
 error                     = [957,576]
-play_card_left            = [400,600]
-play_card_right           = [1470,600]
-play_card                 = [[1470,600],[400,600]]
+play_card                 = [[400,600],[960,600],[930,600],[990,600],[1470,600]]
 bnet_games_button         = [173,46]
 bnet_hearthstone_button   = [55,425]
 bnet_play_button          = [282,966]
@@ -134,7 +132,8 @@ MULLIGAN       = True
 RANDOM_ATTACKS = True
 USE_MOUSE      = True
 MOUSE_SPEED    = 5
-START_HOUR     = 2
+START_HOUR     = 0
+START_HOUR     = 0
 
 class State:
     DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR, RANK, PLAYER_GREEN = range(0,14)
