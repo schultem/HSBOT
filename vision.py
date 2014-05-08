@@ -508,41 +508,7 @@ def read_minion_number_data(src,box=None,stage=None):
     text = image_to_string(im)
     #print text
     #remove non numeric chars
-
-    txt_filter=""
-    for ch in text:
-        if ch=="X":#special character used in minion_font_mask
-            txt_filter+=" "
-        if ch=="x":#special character used in minion_font_mask
-            txt_filter+=" "
-        if ch=="I":
-            txt_filter+="1"
-        elif ch=="l":
-            txt_filter+="1"
-        elif ch=="!":
-            txt_filter+="1"
-        elif ch=="|":
-            txt_filter+="1"
-        elif ch=="o":
-            txt_filter+="0"
-        elif ch=="O":
-            txt_filter+="0"
-        elif ch=="?":
-            txt_filter+="2"
-        elif ch=="S":
-            txt_filter+="8"
-        elif ch=="s":
-            txt_filter+="8"
-        elif ch=="z":
-            txt_filter+="2"
-        elif ch=="Z":
-            txt_filter+="2"
-        elif ch.isdigit():
-            txt_filter+=ch
-        else:
-            txt_filter+=' '
-
-    return txt_filter
+    return filtertext(text)
 
 def get_minion_data(box,stage):
     potential_data=[]
@@ -592,52 +558,8 @@ def read_white_data(src,box):
     #ocr
     text = image_to_string(im)
 
-    txt_filter=""
-    for ch in text:
-        if ch=="I":
-            txt_filter+="1"
-        elif ch=="l":
-            txt_filter+="1"
-        elif ch=="!":
-            txt_filter+="1"
-        elif ch=="|":
-            txt_filter+="1"
-        elif ch=="(":
-            txt_filter+="1"
-        elif ch==")":
-            txt_filter+="1"
-        elif ch=="{":
-            txt_filter+="1"
-        elif ch=="}":
-            txt_filter+="1"
-        elif ch=="Y":
-            txt_filter+="1"
-        elif ch=="[":
-            txt_filter+="0"
-        elif ch=="o":
-            txt_filter+="0"
-        elif ch=="O":
-            txt_filter+="0"
-        elif ch=="0":
-            txt_filter+="0"
-        elif ch=="?":
-            txt_filter+="2"
-        elif ch=="S":
-            txt_filter+="8"
-        elif ch=="s":
-            txt_filter+="8"
-        elif ch=="z":
-            txt_filter+="2"
-        elif ch=="Z":
-            txt_filter+="2"
-        elif ch.isdigit():
-            txt_filter+=ch
-        else:
-            txt_filter+=''
+    return filtertext(text)
 
-    return txt_filter
-
-    
 def minion_data_mask(src,box,stage):
     if box==None:
         src_box=src
@@ -675,50 +597,7 @@ def minion_data_to_string(src_mask):
     if '-1' in text:
         text="4"
     #remove non numeric chars
-    txt_filter=""
-    for ch in text:
-        if ch=="I":
-            txt_filter+="1"
-        elif ch=="l":
-            txt_filter+="1"
-        elif ch=="!":
-            txt_filter+="1"
-        elif ch=="|":
-            txt_filter+="1"
-        elif ch=="(":
-            txt_filter+="1"
-        elif ch==")":
-            txt_filter+="1"
-        elif ch=="{":
-            txt_filter+="1"
-        elif ch=="}":
-            txt_filter+="1"
-        elif ch=="Y":
-            txt_filter+="1"
-        elif ch=="[":
-            txt_filter+="0"
-        elif ch=="o":
-            txt_filter+="0"
-        elif ch=="O":
-            txt_filter+="0"
-        elif ch=="0":
-            txt_filter+="0"
-        elif ch=="?":
-            txt_filter+="2"
-        elif ch=="S":
-            txt_filter+="8"
-        elif ch=="s":
-            txt_filter+="8"
-        elif ch=="z":
-            txt_filter+="2"
-        elif ch=="Z":
-            txt_filter+="2"
-        elif ch.isdigit():
-            txt_filter+=ch
-        else:
-            txt_filter+=' '
-
-    return txt_filter
+    return filtertext(text)
 
 def get_minion_data_split(boxes,stage):
     potential_data = []
@@ -838,3 +717,49 @@ def np_to_img(src):
 def img_to_np(src):
     return np.asarray(src[:,:])
 
+def filtertext(text):
+    txt_filter=""
+    for ch in text:
+        if ch=="I":
+            txt_filter+="1"
+        elif ch=="l":
+            txt_filter+="1"
+        elif ch=="!":
+            txt_filter+="1"
+        elif ch=="|":
+            txt_filter+="1"
+        elif ch=="(":
+            txt_filter+="1"
+        elif ch==")":
+            txt_filter+="1"
+        elif ch=="{":
+            txt_filter+="1"
+        elif ch=="}":
+            txt_filter+="1"
+        elif ch=="Y":
+            txt_filter+="1"
+        elif ch=="[":
+            txt_filter+="0"
+        elif ch=="o":
+            txt_filter+="0"
+        elif ch=="O":
+            txt_filter+="0"
+        elif ch=="0":
+            txt_filter+="0"
+        elif ch=="?":
+            txt_filter+="2"
+        elif ch=="S":
+            txt_filter+="8"
+        elif ch=="s":
+            txt_filter+="8"
+        elif ch=="z":
+            txt_filter+="2"
+        elif ch=="Z":
+            txt_filter+="2"
+        elif ch.isdigit():
+            txt_filter+=ch
+        else:
+            txt_filter+=''
+
+    return txt_filter
+    
