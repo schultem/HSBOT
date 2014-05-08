@@ -4,12 +4,11 @@ import defines
 import logging
 from random import randint
 import os
-from Tkinter import *
-import tkFont
 import threading
 import Queue
-import base64
-import qr
+from countdict import countdict
+from time import gmtime, strftime
+from itertools import combinations
 
 #pre-calulate sift descriptors
 #state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
@@ -22,20 +21,21 @@ stage=None
 #Store screen captures
 src = None
 
+#Shorter binding for the coord resolution convert function
+def c(var):
+    return defines.convert(var,defines.ref)
+
 def main():
     global src
+    #defines.game_screen_res = [1359,743]
+    
     #defines.game_screen_res = [1366,768]
-
-    #print vision.read_card_data(src)
-    src = vision.imread('2taunt.png')
-
-    stage='china'
-    enemy_minions = vision.all_minion_data(src,defines.c(defines.enemy_minion_data),defines.c(defines.enemy_minions_box),minions_box_taunts=defines.c(defines.enemy_minions_box_taunts),stage=stage)
-    print enemy_minions
-    print ""
-    player_minions = vision.all_minion_data(src,defines.c(defines.player_minion_data),defines.c(defines.player_minions_box),minions_box_playable=defines.c(defines.reduced_player_minions_box),stage=stage)
-    for i in range(0,len(player_minions)):
-        print player_minions[i]
-
+    #defines.origin          = [3,22]
+    #defines.screen_box      = [0,0,1920,1080]
+    #defines.origin          = [0,0]
+    #defines.screen_box      = [0,0,1359,743]
+    #src = vision.imread('temp.png')
+    #print vision.get_taunt_minions(src,defines.enemy_minions_box_taunts)
+    
 if __name__ == '__main__':
     main()
