@@ -54,9 +54,9 @@ deck_locations            = {
 play_button               = [1400,890]
 play_back_button          = [1587,994]
 quest_button              = [534,950]
-reroll_quest_button_1     = [803,785]
-reroll_quest_button_2     = [1048,785]
-reroll_quest_button_3     = [1288,785]
+reroll_quest_button_1     = [805,785]
+reroll_quest_button_2     = [1050,785]
+reroll_quest_button_3     = [1290,785]
 
 starting_hand_costs_4     = [(459,350,515,400),(714,350,775,400),(965,350,1030,400),(1224,240,1284,400)]
 starting_hand_costs_3     = [(490,350,555,400),(835,350,900,400),(1180,350,1240,400)]
@@ -78,6 +78,8 @@ bnet_go_online_button     = [1750,60]
 bnet_accept_pw_button     = [100,290]
 bnet_launch_error_button  = [60,120]
 main_screen_splash        = [690,536]
+ranked_button             = [1500,190]
+casual_button             = [1300,190]
 
 ############
 # INFO BOX #
@@ -130,6 +132,7 @@ DECKS_TO_USE   = [0,1,2,3,4,5,6,7,8]
 REROLL_QUESTS  = True
 MULLIGAN       = True
 RANDOM_ATTACKS = True
+PLAY_RANKED    = True
 USE_MOUSE      = True
 MOUSE_SPEED    = 5
 START_HOUR     = 0
