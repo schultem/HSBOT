@@ -10,14 +10,19 @@ from countdict import countdict
 #HSV ranges of green/red bounding fires that surround playable cards/minions
 #suffix _z is a wider range for masking colors over taunts
 #suffix _cd is a smaller range for masking card attack/defense data
+#suffix _t is for targeting arrow color
 lower_green    = cv.Scalar(45, 100, 200)
 upper_green    = cv.Scalar(80, 255, 255)
 lower_green_z  = cv.Scalar(20, 50,  100)
 upper_green_z  = cv.Scalar(70, 255, 255)
 lower_green_cd = cv.Scalar(55, 240, 200)
 upper_green_cd = cv.Scalar(65, 255, 255)
+lower_blue     = cv.Scalar(85, 130, 225)
+upper_blue     = cv.Scalar(95, 140, 255)
 lower_red      = cv.Scalar(0,  130, 240)
 upper_red      = cv.Scalar(20, 255, 255)
+lower_red_t    = cv.Scalar(0,  200, 180)
+upper_red_t    = cv.Scalar(15, 255, 255)
 lower_red_z    = cv.Scalar(0,  50,  100)
 upper_red_z    = cv.Scalar(23, 255, 255)
 lower_red_cd   = cv.Scalar(0,  225, 225)
@@ -385,6 +390,10 @@ def prepare_mask(src,color='green'):
         mask = inRange(hsv1,lower_green, upper_green)
     elif color=='red':
         mask = inRange(hsv1,lower_red, upper_red)
+    elif color=='red_targeting':
+        mask = inRange(hsv1,lower_red_t, upper_red_t)
+    elif color=='blue':
+        mask = inRange(hsv1,lower_blue, upper_blue)
 
     kernel = np.ones((1,1),np.uint8)
     opening = morphologyEx(mask, MORPH_OPEN, kernel)
@@ -559,6 +568,24 @@ def read_white_data(src,box):
     text = image_to_string(im)
 
     return filtertext(text)
+
+def read_white_text(src,box):
+    if box==None:
+        src_box=src
+    else:
+        src_box = src[box[1]:box[3],box[0]:box[2]]
+    hsv = cvtColor(src_box, COLOR_BGR2HSV)
+
+    white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
+
+    src_mask_img = np_to_img(white_mask)
+
+    im = Image.fromstring("L", cv.GetSize(src_mask_img), src_mask_img.tostring())
+    
+    #ocr
+    text = image_to_string(im)
+
+    return text
 
 def minion_data_mask(src,box,stage):
     if box==None:
