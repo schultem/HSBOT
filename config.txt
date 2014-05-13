@@ -1,4 +1,5 @@
-DECKS_TO_USE          = [1, 0, 2]
+DECKS_TO_USE          = [4]
+TARGETING             = [0, 0, 0, 0, 1, 0, 0, 0, 0]
 REROLL_QUESTS         = 1
 MULLIGAN              = 1
 RANDOM_ATTACKS        = 0
