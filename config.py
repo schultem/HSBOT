@@ -3,6 +3,7 @@ import defines
 def save_config():
     f = open( 'config.txt', 'w' )
     f.write( 'DECKS_TO_USE          = ' + repr(defines.DECKS_TO_USE)       + '\n' )
+    f.write( 'TARGETING             = ' + repr(defines.TARGETING)          + '\n' )
     f.write( 'REROLL_QUESTS         = ' + str(int(defines.REROLL_QUESTS))  + '\n' )
     f.write( 'MULLIGAN              = ' + str(int(defines.MULLIGAN))       + '\n' )
     f.write( 'RANDOM_ATTACKS        = ' + str(int(defines.RANDOM_ATTACKS)) + '\n' )
@@ -20,6 +21,12 @@ def load_config():
     for ch in chars:
         if ch.isdigit():
             defines.DECKS_TO_USE.append(int(ch))
+
+    chars = config_file.readline()
+    defines.TARGETING = []
+    for ch in chars:
+        if ch.isdigit():
+            defines.TARGETING.append(int(ch))
 
     chars = config_file.readline()
     for ch in chars:
