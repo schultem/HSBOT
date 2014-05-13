@@ -70,7 +70,7 @@ player_deck               = [1622,650]
 opponent_deck             = [1622,335]
 opponent_hand             = [1010,73]
 error                     = [957,576]
-play_card                 = [[400,600],[960,600],[930,600],[990,600],[1470,600]]
+play_card                 = [[400,600],[960,600],[900,600],[1000,600],[1470,600]]
 bnet_games_button         = [173,46]
 bnet_hearthstone_button   = [55,425]
 bnet_play_button          = [282,966]
@@ -80,6 +80,7 @@ bnet_launch_error_button  = [60,120]
 main_screen_splash        = [690,536]
 ranked_button             = [1500,190]
 casual_button             = [1300,190]
+nuetral_targeting         = [680,770]
 
 ############
 # INFO BOX #
@@ -105,7 +106,7 @@ enemy_minion_data_split     = [(485,438,525,466),(550,438,600,466),(630,438,670,
 reduced_enemy_minions_box   = (421,316,1425,332)
 reduced_opponent_box1       = (877,128,913,142)
 reduced_opponent_box2       = (1000,128,1037,137)
-
+nuetral_targeting_box       = (650,750,705,775)
 
 state_box =[(0,1037,1920,1080),   #deskop
             (684,189,1214,676),   #home
@@ -137,6 +138,10 @@ USE_MOUSE      = True
 MOUSE_SPEED    = 5
 START_HOUR     = 0
 START_HOUR     = 0
+TARGETING      = [0,0,0,0,0,0,0,0,0]
+
+class Target:
+    NONE, OPPONENT_HERO = range(0,2)
 
 class State:
     DESKTOP, HOME, PLAY, QUEUE, VERSUS, SELECT, WAIT, PLAYER, OPPONENT, VICTORY, DEFEAT, ERROR, RANK, PLAYER_GREEN = range(0,14)
