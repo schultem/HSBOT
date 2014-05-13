@@ -58,84 +58,132 @@ class App(Frame):
             defines.USE_MOUSE=True
         save_config()
 
-    def config_deckbutton(self,deck):
-        deck-=1
+    def config_deckbutton(self):
+        deck=self.current_deckopt_num
         if self.deck_buttons[deck]['background'] == "#00ff00":#color is green, so user is disabling
             self.deck_buttons[deck].configure(background="#ff0000")
+            self.deckopt_button.configure(background="#ff0000",text="Deck %i Disabled"%(deck+1))
             defines.DECKS_TO_USE.remove(deck)
         else:#color is red, so user is enabling
             self.deck_buttons[deck].configure(background="#00ff00")
+            self.deckopt_button.configure(background="#00ff00",text="Deck %i Enabled "%(deck+1))
             defines.DECKS_TO_USE.append(deck)
         save_config()
 
-    def toggle_deck_button1(self):
-        self.config_deckbutton(1)
-    def toggle_deck_button2(self):
-        self.config_deckbutton(2)
-    def toggle_deck_button3(self):
-        self.config_deckbutton(3)
-    def toggle_deck_button4(self):
-        self.config_deckbutton(4)
-    def toggle_deck_button5(self):
-        self.config_deckbutton(5)
-    def toggle_deck_button6(self):
-        self.config_deckbutton(6)
-    def toggle_deck_button7(self):
-        self.config_deckbutton(7)
-    def toggle_deck_button8(self):
-        self.config_deckbutton(8)
-    def toggle_deck_button9(self):
-        self.config_deckbutton(9)
-        
-    def select_decks_to_use(self):
-        deckwin = Toplevel(self)
-        deckwin.resizable(0,0)
-        custom_title = Label(deckwin,text="Select custom decks to use:",font=tkFont.nametofont("TkTextFont"))
-        custom_title.grid(row=0,column=0,columnspan=3)
-        self.deck_buttons=[]
-        self.deck_buttons.append(Button(deckwin, text="1", command=self.toggle_deck_button1))
-        self.deck_buttons.append(Button(deckwin, text="2", command=self.toggle_deck_button2))
-        self.deck_buttons.append(Button(deckwin, text="3", command=self.toggle_deck_button3))
-        self.deck_buttons.append(Button(deckwin, text="4", command=self.toggle_deck_button4))
-        self.deck_buttons.append(Button(deckwin, text="5", command=self.toggle_deck_button5))
-        self.deck_buttons.append(Button(deckwin, text="6", command=self.toggle_deck_button6))
-        self.deck_buttons.append(Button(deckwin, text="7", command=self.toggle_deck_button7))
-        self.deck_buttons.append(Button(deckwin, text="8", command=self.toggle_deck_button8))
-        self.deck_buttons.append(Button(deckwin, text="9", command=self.toggle_deck_button9))
-        for i in range(0,9):
-            self.deck_buttons[i].grid(row=i/3+1,column=i%3)
-            if i in defines.DECKS_TO_USE:
-                self.deck_buttons[i].configure(background="#00ff00")
+    def config_preferences(self):
+        defines.TARGETING[self.current_deckopt_num]=self.target.get()
+        save_config()
+
+    def close_deck_opt(self):
+        self.deckopt.destroy()
+        self.deckopt=False
+
+    def deck_options(self,decknum):
+        if not self.deckopt:
+            self.deckopt = Toplevel(self)
+            self.deckopt.resizable(0,0)
+            self.deckopt.protocol('WM_DELETE_WINDOW', self.close_deck_opt)
+            self.current_deckopt_num = decknum-1
+
+            custom_title = Label(self.deckopt,text="Deck %i options:"%decknum,font=tkFont.nametofont("TkTextFont"))
+            custom_title.grid(row=0,column=0)
+            
+            self.deckopt_button = Button(self.deckopt, text="Deck %i enabled"%decknum,font=self.mediumfont, command=self.config_deckbutton)
+            self.deckopt_button.grid(row=1,column=0)
+            if self.current_deckopt_num in defines.DECKS_TO_USE:
+                self.deckopt_button.configure(background="#00ff00",text="Deck %i Enabled "%decknum)
             else:
-                self.deck_buttons[i].configure(background="#ff0000")
+                self.deckopt_button.configure(background="#ff0000",text="Deck %i Disabled"%decknum)
+
+            self.target = IntVar()
+            self.target.set(defines.TARGETING[self.current_deckopt_num])
+            Label(self.deckopt,text="Targeting preference:",         font=tkFont.nametofont("TkTextFont")).grid(row=2,column=0,sticky=W)
+            Radiobutton(self.deckopt, text="No targeting",           font=tkFont.nametofont("TkTextFont"), variable=self.target, value=0, command=self.config_preferences).grid(row=3,column=0,sticky=W)
+            Radiobutton(self.deckopt, text="Opponent hero",          font=tkFont.nametofont("TkTextFont"), variable=self.target, value=1, command=self.config_preferences).grid(row=4,column=0,sticky=W)
+            #Radiobutton(self.deckopt, text="Enemy taunt minion",     font=tkFont.nametofont("TkTextFont"), variable=self.target, value=2, command=self.config_preferences).grid(row=5,column=0,sticky=W)
+            #Radiobutton(self.deckopt, text="Random friendly minion", font=tkFont.nametofont("TkTextFont"), variable=self.target, value=3, command=self.config_preferences).grid(row=6,column=0,sticky=W)
+
+        else:
+            self.close_deck_opt()
+            self.deck_options(decknum)
+
+    def toggle_deck_button1(self):
+        self.deck_options(1)
+    def toggle_deck_button2(self):
+        self.deck_options(2)
+    def toggle_deck_button3(self):
+        self.deck_options(3)
+    def toggle_deck_button4(self):
+        self.deck_options(4)
+    def toggle_deck_button5(self):
+        self.deck_options(5)
+    def toggle_deck_button6(self):
+        self.deck_options(6)
+    def toggle_deck_button7(self):
+        self.deck_options(7)
+    def toggle_deck_button8(self):
+        self.deck_options(8)
+    def toggle_deck_button9(self):
+        self.deck_options(9)
+
+    def close_decks_to_use(self):
+        self.deckwin.destroy()
+        self.deckwin=False
+
+    def select_decks_to_use(self):
+        if not self.deckwin:
+            self.deckwin = Toplevel(self)
+            self.deckwin.resizable(0,0)
+            self.deckwin.protocol('WM_DELETE_WINDOW', self.close_decks_to_use)
+            custom_title = Label(self.deckwin,text="Select custom decks to use:",font=tkFont.nametofont("TkTextFont"))
+            custom_title.grid(row=0,column=0,columnspan=3)
+            self.deck_buttons=[]
+            self.deck_buttons.append(Button(self.deckwin, text="1", command=self.toggle_deck_button1))
+            self.deck_buttons.append(Button(self.deckwin, text="2", command=self.toggle_deck_button2))
+            self.deck_buttons.append(Button(self.deckwin, text="3", command=self.toggle_deck_button3))
+            self.deck_buttons.append(Button(self.deckwin, text="4", command=self.toggle_deck_button4))
+            self.deck_buttons.append(Button(self.deckwin, text="5", command=self.toggle_deck_button5))
+            self.deck_buttons.append(Button(self.deckwin, text="6", command=self.toggle_deck_button6))
+            self.deck_buttons.append(Button(self.deckwin, text="7", command=self.toggle_deck_button7))
+            self.deck_buttons.append(Button(self.deckwin, text="8", command=self.toggle_deck_button8))
+            self.deck_buttons.append(Button(self.deckwin, text="9", command=self.toggle_deck_button9))
+            for i in range(0,9):
+                self.deck_buttons[i].grid(row=i/3+1,column=i%3)
+                if i in defines.DECKS_TO_USE:
+                    self.deck_buttons[i].configure(background="#00ff00")
+                else:
+                    self.deck_buttons[i].configure(background="#ff0000")
+        else:
+            self.close_decks_to_use()
+            self.select_decks_to_use()
 
     def misc(self):
-        deckwin = Toplevel(self)
-        deckwin.resizable(0,0)
-        custom_title = Label(deckwin,text="Toggle options:",font=tkFont.nametofont("TkTextFont"))
+        self.miscwin = Toplevel(self)
+        self.miscwin.resizable(0,0)
+        custom_title = Label(self.miscwin,text="Toggle options:",font=tkFont.nametofont("TkTextFont"))
         custom_title.grid(row=0,column=0,columnspan=3)
-        self.quest_button = Button(deckwin,    text="Reroll 40 gold quests  ",font=self.mediumfont, command=self.toggle_quest_reroll)
+        self.quest_button = Button(self.miscwin,    text="Reroll 40 gold quests  ",font=self.mediumfont, command=self.toggle_quest_reroll)
         self.quest_button.grid(row=1,column=1)
         if defines.REROLL_QUESTS:
             self.quest_button.configure(background="#00ff00")
         else:
             self.quest_button.configure(background="#ff0000")
 
-        self.mulligan_button = Button(deckwin, text="Mulligan cards             ",font=self.mediumfont, command=self.toggle_mulligan)
+        self.mulligan_button = Button(self.miscwin, text="Mulligan cards             ",font=self.mediumfont, command=self.toggle_mulligan)
         self.mulligan_button.grid(row=2,column=1)
         if defines.MULLIGAN:
             self.mulligan_button.configure(background="#00ff00")
         else:
             self.mulligan_button.configure(background="#ff0000")
 
-        self.play_ranked_button = Button(deckwin, text="Play ranked                  ",font=self.mediumfont, command=self.toggle_play_ranked)
+        self.play_ranked_button = Button(self.miscwin, text="Play ranked                  ",font=self.mediumfont, command=self.toggle_play_ranked)
         self.play_ranked_button.grid(row=3,column=1)
         if defines.PLAY_RANKED:
             self.play_ranked_button.configure(background="#00ff00")
         else:
             self.play_ranked_button.configure(background="#ff0000")
 
-        self.random_attack_button = Button(deckwin, text="Attack taunts randomly",font=self.mediumfont, command=self.toggle_random_attack)
+        self.random_attack_button = Button(self.miscwin, text="Attack taunts randomly",font=self.mediumfont, command=self.toggle_random_attack)
         self.random_attack_button.grid(row=4,column=1)
         if defines.RANDOM_ATTACKS:
             self.random_attack_button.configure(background="#00ff00")
@@ -155,32 +203,32 @@ class App(Frame):
         save_config()
 
     def controls(self):
-        deckwin = Toplevel(self)
-        deckwin.resizable(0,0)
-        custom_title = Label(deckwin,text="Control options:",font=tkFont.nametofont("TkTextFont"))
+        self.controlwin = Toplevel(self)
+        self.controlwin.resizable(0,0)
+        custom_title = Label(self.controlwin,text="Control options:",font=tkFont.nametofont("TkTextFont"))
         custom_title.grid(row=0,column=0,columnspan=3)
-        #self.mouse_button = Button(deckwin,    text="Move mouse         ",font=self.mediumfont, command=self.toggle_move_mouse)
+        #self.mouse_button = Button(self.controlwin,    text="Move mouse         ",font=self.mediumfont, command=self.toggle_move_mouse)
         #self.mouse_button.grid(row=1,column=0)
         #if defines.USE_MOUSE:
         #    self.mouse_button.configure(background="#00ff00")
         #else:
         #    self.mouse_button.configure(background="#ff0000")
 
-        mouse_speed_label = Label(deckwin,text="Mouse speed:",font=tkFont.nametofont("TkTextFont"))
+        mouse_speed_label = Label(self.controlwin,text="Mouse speed:",font=tkFont.nametofont("TkTextFont"))
         mouse_speed_label.grid(row=2,column=0)
-        self.mouse_speed_scale = Scale(deckwin, from_=1, to=9,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_mouse_speed)
+        self.mouse_speed_scale = Scale(self.controlwin, from_=1, to=9,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_mouse_speed)
         self.mouse_speed_scale.grid(row=2,column=1)
         self.mouse_speed_scale.set(defines.MOUSE_SPEED)
 
-        start_hour_label = Label(deckwin,text="Hour to start:",font=tkFont.nametofont("TkTextFont"))
+        start_hour_label = Label(self.controlwin,text="Hour to start:",font=tkFont.nametofont("TkTextFont"))
         start_hour_label.grid(row=3,column=0)
-        self.start_hour_scale = Scale(deckwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_start_hour)
+        self.start_hour_scale = Scale(self.controlwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_start_hour)
         self.start_hour_scale.grid(row=3,column=1)
         self.start_hour_scale.set(defines.START_HOUR)
         
-        stop_hour_label = Label(deckwin,text="Hour to stop:",font=tkFont.nametofont("TkTextFont"))
+        stop_hour_label = Label(self.controlwin,text="Hour to stop:",font=tkFont.nametofont("TkTextFont"))
         stop_hour_label.grid(row=4,column=0)
-        self.stop_hour_scale = Scale(deckwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_stop_hour)
+        self.stop_hour_scale = Scale(self.controlwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_stop_hour)
         self.stop_hour_scale.grid(row=4,column=1)
         self.stop_hour_scale.set(defines.STOP_HOUR)
 
@@ -213,6 +261,8 @@ class App(Frame):
         # create a Text widget
         self.txt = Text(txt_frm, borderwidth=3, relief="sunken")
         self.txt.config(font=("consolas", 12), undo=True, wrap='word')
+        set_text_newline("Build 5/10/2014")
+        set_text_newline("")
         set_text_newline("This is a Hearthstone color bot that takes screenshots of the game window and uses computer vision (sift and color masking) to find playable cards, use the character ability, and to attack with minions.")
         set_text_newline("")
         set_text_newline("How to use:")
@@ -293,6 +343,9 @@ class App(Frame):
 
         self.change_led_color("#ff0000"," off ")
         self.stop_button.config(state='disabled')
+        
+        self.deckopt=False
+        self.deckwin=False
         
         self.queue       = Queue.Queue()
         self.logicthread = GameLogicThread(self.queue)
