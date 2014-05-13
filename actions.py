@@ -247,7 +247,7 @@ def restart_game():
                 move_and_leftclick(match_coord_online,pycmdwnd=pycwnd)
                 #pycwnd_click(pycwnd,defines.c(defines.bnet_go_online_button))
                 whndl_login = get_whndl("Battle.net Login")
-                if whndl_login != None and whndl_login != 0:
+                if whndl_login:
                     #prepare battlenet login window for input
                     #pw_file = open("pw.txt")
                     #pw=pw_file.readline()
