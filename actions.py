@@ -252,7 +252,7 @@ def restart_game():
                     #pw_file = open("pw.txt")
                     #pw=pw_file.readline()
                     #pw_file.close()
-                    #pycwnd_login = make_pycwnd(whndl_login)
+                    pycwnd_login = make_pycwnd(whndl_login)
                     #pycwnd_string(pycwnd_login,pw)
                     pycwnd_click(pycwnd_login,defines.bnet_accept_pw_button)
                     pause_pensively(5)
