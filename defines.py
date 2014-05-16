@@ -1,4 +1,4 @@
-from pair_convert import convert
+from pairconvert import convert
 
 #######################################
 #  The game screen resolution to use  #
