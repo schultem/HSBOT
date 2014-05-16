@@ -6,6 +6,8 @@ import os
 import defines
 from pytesser import *
 from countdict import countdict
+import logging
+#logging.basicConfig(filename='game.txt',level=logging.DEBUG)
 
 #HSV ranges of green/red bounding fires that surround playable cards/minions
 #suffix _z is a wider range for masking colors over taunts
@@ -41,19 +43,25 @@ minion_font_mask = imread('images//minion_font_mask.png',0)
 
 #Default to take a screenshot of the whole screen
 def screen_cap(box=defines.screen_box):
+    logging.info("[ENTER] screen_cap")
     src_PIL = ImageGrab.grab(box)
     src = np.array(src_PIL) 
+    src = src[:, :, ::-1].copy()
+    #imwrite('src.png',src)
     # Convert RGB to BGR 
-    return src[:, :, ::-1].copy()
+    return src
 
 def screen_save(box=defines.screen_box,filename='temp\\temp'):
+    logging.info("[ENTER] screen_save")
     im = ImageGrab.grab(box)
     im.save(os.getcwd() + '\\'+filename+'.png', 'PNG')
 
 def screen_load(filename='temp\\temp'):
+    logging.info("[ENTER] screen_load")
     return imread(os.getcwd() + '\\'+filename+'.png',0)
 
 def calc_histogram(src):
+    logging.info("[ENTER] calc_histogram")
     # Convert to HSV
     hsv = cv.CreateImage(cv.GetSize(src), 8, 3)
     cv.CvtColor(src, hsv, cv.CV_BGR2HSV)
@@ -93,6 +101,7 @@ def calc_histogram(src):
 
 #Earth Movers Distance comparison of histograms
 def calc_emd(src1,src2):
+    logging.info("[ENTER] calc_emd")
     h_bins = H_BINS
     s_bins = S_BINS
 
@@ -120,6 +129,7 @@ def calc_emd(src1,src2):
 
 #calculate the minimum emd file f compared to src
 def calc_min_emd(src,min_directory):
+    logging.info("[ENTER] calc_min_emd")
     min_emd = 9999999.99
     min_f = ''
     for f in os.listdir(min_directory):
@@ -134,6 +144,7 @@ def calc_min_emd(src,min_directory):
 
 #Earth Movers Distance comparison of histograms, use a precalculated sig of src2
 def calc_emd_pre_calculated_src2(src1,sig2):
+    logging.info("[ENTER] calc_emd_pre_calculated_src2")
     h_bins = H_BINS
     s_bins = S_BINS
 
@@ -154,6 +165,7 @@ def calc_emd_pre_calculated_src2(src1,sig2):
 
 #to speed up comparisons calculate the histogram for an image for use later
 def pre_calculate_sig(src2):
+    logging.info("[ENTER] pre_calculate_sig")
     h_bins = H_BINS
     s_bins = S_BINS
 
@@ -175,6 +187,7 @@ def pre_calculate_sig(src2):
         
 #pre calculate the sigs of a directory and return as a dictionary
 def get_sigs(min_directory):
+    logging.info("[ENTER] get_sigs")
     sigs={}
     for f in os.listdir(min_directory):
         sigs[f] = pre_calculate_sig(cv.LoadImage(min_directory + f))
@@ -183,6 +196,7 @@ def get_sigs(min_directory):
 
 #pre calculate the descreiptors of a directory and return as a dictionary
 def get_descs(min_directory):
+    logging.info("[ENTER] get_descs")
     sift = SIFT()
     descriptors={}
     for f in os.listdir(min_directory):
@@ -192,6 +206,7 @@ def get_descs(min_directory):
     return descriptors
 
 def pre_calculate_des(img2):
+    logging.info("[ENTER] pre_calculate_des")
     # Initiate SIFT detector
     sift = SIFT()
     _, des2 = sift.detectAndCompute(img2,None)
@@ -200,6 +215,7 @@ def pre_calculate_des(img2):
 #provide two images and a minimum match count, return true for match, false for no match
 #return average match coordinates
 def calc_sift(img1,img2,ratio=0.7):
+    logging.info("[ENTER] calc_sift")
     # Initiate SIFT detector
     sift = SIFT()
     
@@ -234,6 +250,7 @@ def calc_sift(img1,img2,ratio=0.7):
     
 #provide two images and a minimum match count, return true for match, false for no match
 def calc_sift_precaculated_src2(src1,des2):
+    logging.info("[ENTER] calc_sift_precalculated_src2")
     # Initiate SIFT detector
     sift = SIFT()
     
@@ -258,6 +275,7 @@ def calc_sift_precaculated_src2(src1,des2):
     
 #returns the most likely matching filename in an images directory
 def get_image_info(src,sigs,box):
+    logging.info("[ENTER] get_image_info")
     min_emd = 9999999.99
     min_f = ''
 
@@ -275,6 +293,7 @@ def get_image_info(src,sigs,box):
 
 #returns the most likely matching filename in an images directory
 def get_image_info_sift(src,descs,box):
+    logging.info("[ENTER] get_image_info_sift")
     max_good = 0
     max_f = None
 
@@ -291,6 +310,7 @@ def get_image_info_sift(src,descs,box):
 
 #returns the most likely matching filename in an images directory
 def get_state(src,sigs):
+    logging.info("[ENTER] get_state")
     min_emd = 9999999.99
     min_f = ''
     src = np_to_img(src)
@@ -305,6 +325,7 @@ def get_state(src,sigs):
 
 #returns the most likely matching filename in an images directory
 def get_state_sift(src,descs,ignore_list=[]):
+    logging.info("[ENTER] get_state_sift")
     max_good = 0
     max_f = None
 
@@ -322,6 +343,7 @@ def get_state_sift(src,descs,ignore_list=[]):
 
 #detect rising and falling edges across a binary image at y
 def vertical_edges(image,y=None):
+    logging.info("[ENTER] vertical_edges")
     if y == None:
         y = image.shape[0]/2
     
@@ -339,6 +361,7 @@ def vertical_edges(image,y=None):
 
 #detect rising and falling edges across a binary image at x
 def horizontal_edges(image,x=None):
+    logging.info("[ENTER] horizontal_edges")
     if x == None:
         x = image.shape[1]/2
 
@@ -353,6 +376,7 @@ def horizontal_edges(image,x=None):
     return rising_edges,falling_edges
 
 def get_playable_cards(src,box,pad=20):
+    logging.info("[ENTER] get_playable_cards")
     src_box = src[box[1]:box[3],box[0]:box[2]]
     gray = cvtColor(src_box,COLOR_BGR2GRAY)
     result = inRange(gray,0, 0)
@@ -366,6 +390,7 @@ def get_playable_cards(src,box,pad=20):
 #return the middle egdes between rising and falling edges
 #with an optional threshold rising to falling edge length
 def get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=0,max_threshold=200):
+    logging.info("[ENTER] get_mid_vertical_edges")
     if len(rising_edges) != len(falling_edges):
         return None
 
@@ -385,6 +410,7 @@ def get_mid_vertical_edges(rising_edges,falling_edges,min_threshold=0,max_thresh
     return mid_edges#,mid_edges_min,mid_edges_max
 
 def prepare_mask(src,color='green'):
+    logging.info("[ENTER] prepare_mask")
     hsv1 = cvtColor(src, COLOR_BGR2HSV)
     if color=='green':
         mask = inRange(hsv1,lower_green, upper_green)
@@ -405,6 +431,7 @@ def prepare_mask(src,color='green'):
 
 #Find occurrences of a color across a horizontal strip, add y-pad to the returned coordinates
 def color_range_reduced_mids(src,box,color='green',pad=25,min_threshold=0,max_threshold=99999):
+    logging.info("[ENTER] color_range_reduced_mids")
     src_box = src[box[1]:box[3],box[0]:box[2]]
     mask = prepare_mask(src_box,color)
 
@@ -420,6 +447,7 @@ def color_range_reduced_mids(src,box,color='green',pad=25,min_threshold=0,max_th
     return mid_edges#,mid_edges_min,mid_edges_max
 
 def get_minions(src,box,pad=-50,min_threshold=25):
+    logging.info("[ENTER] get_minions")
     foreground = src[box[1]:box[3],box[0]:box[2]]
     fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
 
@@ -446,6 +474,7 @@ def get_minions(src,box,pad=-50,min_threshold=25):
 
 #return the location of enemy taunt minions using subtractive background masking
 def get_taunt_minions(src,taunt_box,pad=-50,min_threshold=20):
+    logging.info("[ENTER] get_taunt_minions")
     background = imread('images//back.png')
     foreground = src[taunt_box[1]:taunt_box[3],taunt_box[0]:taunt_box[2]]
     background = resize(background, (foreground.shape[1],foreground.shape[0]))
@@ -482,6 +511,7 @@ def get_taunt_minions(src,taunt_box,pad=-50,min_threshold=20):
     return mid_edges
 
 def read_minion_number_data(src,box=None,stage=None):
+    logging.info("[ENTER] read_minion_number_data")
     global minion_font_mask
     if box==None:
         src_box=src
@@ -520,6 +550,7 @@ def read_minion_number_data(src,box=None,stage=None):
     return filtertext(text)
 
 def get_minion_data(box,stage):
+    logging.info("[ENTER] get_minion_data")
     potential_data=[]
     pd_cnt=0
     for i in range(0,100):
@@ -553,6 +584,7 @@ def get_minion_data(box,stage):
     return None
 
 def read_white_data(src,box):
+    logging.info("[ENTER] read_white_data")
     if box==None:
         src_box=src
     else:
@@ -570,6 +602,7 @@ def read_white_data(src,box):
     return filtertext(text)
 
 def read_white_text(src,box):
+    logging.info("[ENTER] read_white_text")
     if box==None:
         src_box=src
     else:
@@ -588,6 +621,7 @@ def read_white_text(src,box):
     return text
 
 def minion_data_mask(src,box,stage):
+    logging.info("[ENTER] minion_data_mask")
     if box==None:
         src_box=src
     else:
@@ -613,6 +647,7 @@ def minion_data_mask(src,box,stage):
     return total_mask
 
 def minion_data_to_string(src_mask):
+    logging.info("[ENTER] minion_data_to_string")
     #convert opencv black and white np to PIL image
     src_mask_img = np_to_img(src_mask)
     im = Image.fromstring("L", cv.GetSize(src_mask_img), src_mask_img.tostring())
@@ -627,6 +662,7 @@ def minion_data_to_string(src_mask):
     return filtertext(text)
 
 def get_minion_data_split(boxes,stage):
+    logging.info("[ENTER] get_minion_data_split")
     potential_data = []
     result_data    = []
     
@@ -657,6 +693,7 @@ def get_minion_data_split(boxes,stage):
 #do not defines.c(minion_data_boxes), it is a list of boxes, so it would get permanently changed.
 #Instead get_minion_data_split takes care of the conversion
 def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts_reduced=None,minions_box_taunts=None,minions_box_playable=None,stage=None,reduced_color=None):
+    logging.info("[ENTER] all_minion_data")
     minion_coords = get_minions(src,minions_box)
     #print minion_coords
     #cull minion data not close to known minion coords to save time
@@ -732,6 +769,7 @@ def all_minion_data(src,minion_data_boxes,minions_box,minions_box_taunts_reduced
     return minions
 
 def save_img_box(src,box=None,filename='temp'):
+    logging.info("[ENTER] save_img_box")
     if box==None:
         src_box=src
     else:
@@ -739,12 +777,15 @@ def save_img_box(src,box=None,filename='temp'):
     imwrite(os.getcwd() + '\\'+filename+'.png', src_box)
 
 def np_to_img(src):
+    logging.info("[ENTER] np_to_img")
     return cv.fromarray(src)
 
 def img_to_np(src):
+    logging.info("[ENTER] img_to_np")
     return np.asarray(src[:,:])
 
 def filtertext(text):
+    logging.info("[ENTER] filtertext")
     txt_filter=""
     for ch in text:
         if ch=="I":
