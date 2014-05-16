@@ -2,8 +2,11 @@ import win32api, win32con, win32gui, win32ui, win32process
 import time
 import defines
 import vision
+import logging
+#logging.basicConfig(filename='game.txt',level=logging.DEBUG)
 
 def leftClick(click=True,coords=False,pycmdwnd=False):
+    logging.info("[ENTER] leftClick")
     if click:
         try:
             if defines.USE_MOUSE:
@@ -24,6 +27,7 @@ def leftClick(click=True,coords=False,pycmdwnd=False):
         pause_pensively(0.1)
 
 def rightClick(click=True):
+    logging.info("[ENTER] rightClick")
     if click:
         pause_pensively(0.1)
         win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN,0,0)
@@ -32,16 +36,19 @@ def rightClick(click=True):
         pause_pensively(0.1)
 
 def leftDown(click=True):
+    logging.info("[ENTER] leftDown")
     if click:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
         time.sleep(.1)
 
 def leftUp(click=True):
+    logging.info("[ENTER] leftUp")
     if click:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
         time.sleep(.1)
 
 def setCursorPos(coord):
+    #logging.info("[ENTER] setCursorPos")
     win32api.SetCursorPos((coord[0],coord[1]))
 
 def getCursorPos():
@@ -49,6 +56,7 @@ def getCursorPos():
     return [x,y]
 
 def interpCursorPos(coord):
+    logging.info("[ENTER] interpCursorPos")
     coord_curr = getCursorPos()
     newpos  = coord_curr
     while(coord_curr[0]!=coord[0] or coord_curr[1]!=coord[1]):        
@@ -76,6 +84,7 @@ def interpCursorPos(coord):
     return True
 
 def pause_pensively(s):
+    logging.info("[ENTER] pause_pensively")
     time.sleep(s)
 
 #def leftclick_drag_and_release(click_coord, release_coord):
@@ -86,6 +95,7 @@ def pause_pensively(s):
 #    leftUp(success)
 
 def leftclick_move_and_leftclick(click_coord, click_coord_2):
+    logging.info("[ENTER] leftclick_move_and_leftclick")
     success = True
     if defines.USE_MOUSE and success:
         success = interpCursorPos(click_coord)
@@ -96,6 +106,7 @@ def leftclick_move_and_leftclick(click_coord, click_coord_2):
     leftClick(success,click_coord_2)
 
 def move_and_leftclick(click_coord,pycmdwnd=False):
+    logging.info("[ENTER] move_and_leftclick")
     success = True
     if defines.USE_MOUSE and success:
         success = interpCursorPos(click_coord)
@@ -104,24 +115,29 @@ def move_and_leftclick(click_coord,pycmdwnd=False):
     return success
 
 def move_and_rightclick(click_coord):
+    logging.info("[ENTER] move_and_rightclick")
     success = True
     success = interpCursorPos(click_coord)
     rightClick(success)
     return success
 
 def move_cursor(move_coord):
+    logging.info("[ENTER] move_cursor")
     if defines.USE_MOUSE:
         success = interpCursorPos(move_coord)
 
 def get_whndl(window_name):
+    logging.info("[ENTER] get_whndl")
     whndl = win32gui.FindWindowEx(0, 0, None, window_name)
     return whndl
 
 def make_pycwnd(hwnd):       
+    logging.info("[ENTER] make_pycwnd")
     PyCWnd = win32ui.CreateWindowFromHandle(hwnd)
     return PyCWnd
 
 def pycwnd_click(pycwnd,coord):
+    logging.info("[ENTER] pycwnd_click")
     lParam = coord[1] << 16 | coord[0]
     pycwnd.PostMessage(win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam);
     pause_pensively(0.1)
@@ -129,9 +145,11 @@ def pycwnd_click(pycwnd,coord):
     pause_pensively(0.1)
 
 def foreground_whndl(whwnd):
+    logging.info("[ENTER] foreground_whndl")
     win32gui.SetForegroundWindow(whwnd)
 
 def pycwnd_string(pycwnd, msg):
+    logging.info("[ENTER] pycwnd_string")
     for c in msg:
         if c == "\n":
             pycwnd.SendMessage(win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
@@ -141,11 +159,13 @@ def pycwnd_string(pycwnd, msg):
             pycwnd.SendMessage(win32con.WM_CHAR, ord(c), 0)
 
 def whnds_to_text(hwnds):
+    logging.info("[ENTER] whnds_to_text")
     for hwnd in range(0,len(hwnds)):
         hwnds[hwnd]=win32gui.GetWindowText(hwnds[hwnd])
     return hwnds
 
 def print_all_whnds():
+    logging.info("[ENTER] print_all_whnds")
     hwnds=[]
     def enumHandler(hwnd, lParam):
         hwnds.append(hwnd)
@@ -156,6 +176,7 @@ def print_all_whnds():
 
 #Return True if game is not minimized and is running.  Otherwise False
 def check_bnet(title):
+    logging.info("[ENTER] check_bnet")
     whndl =  get_whndl(title)
     if whndl != None and whndl != 0:
         return True
@@ -163,6 +184,7 @@ def check_bnet(title):
 
 #Return True if game is not minimized and is running.  Otherwise False
 def check_game(title):
+    logging.info("[ENTER] check_game")
     whndl =  get_whndl(title)
     if whndl != None and whndl != 0:
         #check if game is not minimized
@@ -172,6 +194,7 @@ def check_game(title):
     return False
 
 def get_client_box(title):
+    logging.info("[ENTER] get_client_box")
     whndl =  get_whndl(title)
     if whndl != None and whndl != 0:
         window_box = win32gui.GetWindowRect(whndl)
@@ -188,6 +211,7 @@ def get_client_box(title):
 #change ratio of input list to closest value of output ratio
 #use here is to get game close to 16:9 resolution so the button locations work
 def closest_ratio(r_input,r_output):
+    logging.info("[ENTER] closest_ratio")
     if r_input != None and r_input[1] !=0:
         if float(r_input[0])/float(r_input[1]) > r_output:
             change_var = r_input[0]
@@ -203,6 +227,7 @@ def closest_ratio(r_input,r_output):
 
 #Move game window to 0,0 and update it to represent the the clients desired resolution
 def reset_game_window(update_size=True):
+    logging.info("[ENTER] reset_game_window")
     title="Hearthstone"
     game_whndl =  get_whndl(title)
     if game_whndl != None and game_whndl != 0:
@@ -221,6 +246,7 @@ def reset_game_window(update_size=True):
         defines.origin          = [0,0]#explicitly updated to (0,0) in MoveWindow
 
 def restart_game():
+    logging.info("[ENTER] restart_game")
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
         win32gui.ShowWindow(whndl, win32con.SW_RESTORE)
