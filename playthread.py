@@ -9,6 +9,7 @@ import Queue
 from countdict import countdict
 from time import gmtime, strftime
 from itertools import combinations
+#logging.basicConfig(filename='game.txt',level=logging.DEBUG)
 
 #Store screen captures
 src = None
@@ -33,6 +34,7 @@ def c(var):
 
 #Update monitor resolution and game screen location and resolution
 def update_resolutions():
+    logging.info("[ENTER] update_resolutions")
     client_box              = actions.get_client_box("Hearthstone")
     defines.origin          = [client_box[0],client_box[1]]
     defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
@@ -42,11 +44,13 @@ NEW_GAME     = False
 THE_COIN     = True
 
 def desktop():
-    pass
+    logging.info("[ENTER] desktop")
 def home():
+    logging.info("[ENTER] home")
     control_success=actions.move_and_leftclick(c(defines.main_menu_play_button))
 def play():
     global stage_char,player_char,current_decknum
+    logging.info("[ENTER] play")
     stage_char=None
     player_char=None
     src = vision.screen_cap()
@@ -64,12 +68,15 @@ def play():
             control_success=actions.move_and_leftclick(c(defines.play_button))
             actions.pause_pensively(0.5)
 def queue():
+    logging.info("[ENTER] queue")
     actions.pause_pensively(0.5)
 def versus():
+    logging.info("[ENTER] versus")
     control_success=actions.move_and_leftclick(c(defines.neutral))
     actions.pause_pensively(10)
 def select():
     global NEW_GAME,THE_COIN
+    logging.info("[ENTER] select")
     NEW_GAME = True
 
     if defines.MULLIGAN:
@@ -104,10 +111,11 @@ def select():
     control_success=actions.move_and_leftclick(c(defines.confirm_hand_button))
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def wait():
-    pass
+    logging.info("[ENTER] wait")
 def player():
     global src
     global NEW_GAME,opponent_char,player_char,stage,current_decknum
+    logging.info("[ENTER] player")
     control_success=True#keep track of whether or not the bot was able to control the mouse.  If not the user is attempting to use it
     actions.pause_pensively(1)
 
@@ -349,24 +357,25 @@ def player():
             player_end()
 
 def opponent():
-    pass
+    logging.info("[ENTER] opponent")
 def victory():
-    #logging.info("Victory")
+    logging.info("[ENTER] victory")
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def defeat():
-    #logging.info("Defeat")
+    logging.info("[ENTER] defeat")
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def error():
-    #logging.info("Error: Clicking OK in error message")
+    logging.info("[ENTER] error")
     control_success=actions.move_and_leftclick(c(defines.error))
 def rank():
+    logging.info("[ENTER] rank")
     control_success=actions.move_and_leftclick(c(defines.neutral))
     control_success=actions.move_and_leftclick(c(defines.main_screen_splash))
 def player_end():
     global src#,character_descs,stage_descs
     global NEW_GAME,opponent_char,player_char
 
-    #logging.info("------PLAY INFO CHECK-------")
+    logging.info("[ENTER] player_end")
     control_success=actions.move_and_leftclick(c(defines.neutral))
     src = vision.screen_cap()
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
