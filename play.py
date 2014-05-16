@@ -7,6 +7,7 @@ import Queue
 import qr
 from config import load_config,save_config
 from playthread import *
+#logging.basicConfig(filename='game.txt',level=logging.DEBUG)
 
 #The GUI
 class App(Frame):
@@ -274,9 +275,9 @@ class App(Frame):
         set_text_newline("")
         set_text_newline("The bot takes control of the mouse. If it detects that the user is using the mouse, it will stop and pause for a couple of seconds.")
         set_text_newline("")
-        set_text_newline("The bot can play simple minions or spells that don't have targeting abilities (such as 'give a minion +1/+1' or'deal 3 damage' or 'silence a minion'). Basically, if the card can be played by right-clicking, dragging, and right-clicking on the minion field, the bot will play it. Otherwise it might get stuck.")
+        set_text_newline("The bot can play simple minions or spellsBasically, if the card can be played by right-clicking, dragging, and right-clicking on the minion field, the bot will play it. Opponent hero targeting can be enabled from the deck selection menu.")
         set_text_newline("")
-        set_text_newline("If the game resolution is not 16:9 the bot will automatically convert it to 16:9.  The recommended resolutions are 1366x768, 1280x720, or 1920x1080. If the monitor resolution or game resolution is changed it is recommended to restart the bot. It is recommended to use the hearthstone client in windowed mode so it can be minimized easily.")
+        set_text_newline("If the game resolution is not 16:9 the bot will try to automatically convert it to 16:9 when opening the game from battlenet.  The recommended resolutions are 1366x768, 1280x720, or 1920x1080. If the monitor resolution or game resolution is changed it is recommended to restart the bot. It is recommended to use the hearthstone client in windowed mode so it can be minimized easily.")
         set_text_newline("")
         set_text_newline("The bot will attempt to restart the game if it closes or disconnects.")
         set_text_newline("")
@@ -398,7 +399,6 @@ class App(Frame):
 def main():
     global src
     global NEW_GAME
-    #logging.basicConfig(filename='game.log',level=logging.DEBUG)
 
     #load config options
     load_config()
