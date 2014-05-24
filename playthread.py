@@ -35,9 +35,11 @@ def c(var):
 #Update monitor resolution and game screen location and resolution
 def update_resolutions():
     logging.info("[ENTER] update_resolutions")
-    client_box              = actions.get_client_box("Hearthstone")
-    defines.origin          = [client_box[0],client_box[1]]
-    defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+    client_box                  = actions.get_client_box("Hearthstone")
+    defines.origin              = [client_box[0],client_box[1]]
+    defines.window_box          = client_box
+    defines.game_screen_res     = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+    defines.ref_game_screen_res = defines.ref_game_screen_res_list[defines.GAME_SCREEN_RES]
 
 #Flags
 NEW_GAME     = False
@@ -284,6 +286,7 @@ def player():
             actions.pause_pensively(2.5)
         elif enemy_minions:
             control_success=actions.move_and_leftclick(e_m)
+            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
             actions.pause_pensively(2.5)
         elif enemy:
             control_success=actions.move_and_leftclick(c(defines.opponent_hero))
@@ -366,7 +369,8 @@ def defeat():
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def error():
     logging.info("[ENTER] error")
-    control_success=actions.move_and_leftclick(c(defines.error))
+    control_success=actions.move_and_leftclick(c(defines.error_1))
+    control_success=actions.move_and_leftclick(c(defines.error_2))
 def rank():
     logging.info("[ENTER] rank")
     control_success=actions.move_and_leftclick(c(defines.neutral))
@@ -476,7 +480,8 @@ class GameLogicThread(threading.Thread):
                             if self.new_state == self.old_state and (self.new_state == defines.State.PLAY or self.new_state == defines.State.HOME):
                                 #Might have been a connection error.
                                 self.queue.put("Must enable at least one custom deck in Options!")
-                                control_success=actions.move_and_leftclick(c(defines.error))
+                                control_success=actions.move_and_leftclick(c(defines.error_1))
+                                control_success=actions.move_and_leftclick(c(defines.error_2))
                                 control_success=actions.move_and_leftclick(c(defines.neutral))
                             
                             #if self.new_state == defines.State.PLAY and self.old_state == defines.State.QUEUE:
