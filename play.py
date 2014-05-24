@@ -72,7 +72,11 @@ class App(Frame):
         save_config()
 
     def config_preferences(self):
-        defines.TARGETING[self.current_deckopt_num]=self.target.get()
+        defines.GAME_SCREEN_RES=self.target.get()
+        save_config()
+        
+    def config_resolution(self):
+        defines.GAME_SCREEN_RES=self.resvar.get()
         save_config()
 
     def close_deck_opt(self):
@@ -232,6 +236,24 @@ class App(Frame):
         self.stop_hour_scale = Scale(self.controlwin, from_=0, to=24,font=tkFont.nametofont("TkTextFont"), orient=HORIZONTAL,command=self.save_stop_hour)
         self.stop_hour_scale.grid(row=4,column=1)
         self.stop_hour_scale.set(defines.STOP_HOUR)
+        
+    def resolutions(self):
+        self.resolutionwin = Toplevel(self)
+        self.resolutionwin.resizable(0,0)
+        custom_title = Label(self.resolutionwin,text="Resolutions:",font=tkFont.nametofont("TkTextFont"))
+        custom_title.grid(row=0,column=0)
+
+        #self.resvar = IntVar()
+        #self.resvar.set(defines.GAME_SCREEN_RES)
+        #print self.resvar.get()
+        ##for i in xrange(len(defines.game_screen_res_list)):
+        #i=0
+        #Radiobutton(self.resvar, text='Test',font=tkFont.nametofont("TkTextFont"), variable=self.resvar, value=0, command=self.config_resolution).grid(row=i+1,column=0,sticky=W)
+        
+        self.resvar = IntVar()
+        self.resvar.set(defines.GAME_SCREEN_RES)
+        for i in xrange(len(defines.game_screen_res_list)):
+            Radiobutton(self.resolutionwin, text=str(defines.game_screen_res_list[i]),font=tkFont.nametofont("TkTextFont"), variable=self.resvar, value=i, command=self.config_resolution).grid(row=i+1,column=0,sticky=W)
 
     def donate_window(self):
         donatewin = Toplevel(self)
@@ -262,22 +284,21 @@ class App(Frame):
         # create a Text widget
         self.txt = Text(txt_frm, borderwidth=3, relief="sunken")
         self.txt.config(font=("consolas", 12), undo=True, wrap='word')
-        set_text_newline("Build 5/10/2014")
+        set_text_newline("Build 5/22/2014")
         set_text_newline("")
         set_text_newline("This is a Hearthstone color bot that takes screenshots of the game window and uses computer vision (sift and color masking) to find playable cards, use the character ability, and to attack with minions.")
         set_text_newline("")
         set_text_newline("How to use:")
         set_text_newline(" -Make custom decks that the bot can use and note their number in the list (1-9)")
         set_text_newline(" -Start Battle.net or start Hearthstone and start the bot   ")
+        set_text_newline(" -Pick desired resolution from Controls->Resolutions")
         set_text_newline(" -Select the custom decks that the bot can use with Options->Custom Decks.  Green means use the deck, red means do not use the deck.")
         set_text_newline(" -Press start, the bot will attempt to start and use the game. It may take a couple of seconds.")
         set_text_newline(" -Press stop to stop the bot, it may take a couple of seconds.")
         set_text_newline("")
-        set_text_newline("The bot takes control of the mouse. If it detects that the user is using the mouse, it will stop and pause for a couple of seconds.")
+        set_text_newline("The bot takes control of the mouse. If it detects that the user is using the mouse, it will stop and pause momentarily.")
         set_text_newline("")
-        set_text_newline("The bot can play simple minions or spellsBasically, if the card can be played by right-clicking, dragging, and right-clicking on the minion field, the bot will play it. Opponent hero targeting can be enabled from the deck selection menu.")
-        set_text_newline("")
-        set_text_newline("If the game resolution is not 16:9 the bot will try to automatically convert it to 16:9 when opening the game from battlenet.  The recommended resolutions are 1366x768, 1280x720, or 1920x1080. If the monitor resolution or game resolution is changed it is recommended to restart the bot. It is recommended to use the hearthstone client in windowed mode so it can be minimized easily.")
+        set_text_newline("The bot can play simple minions or spells. Opponent hero targeting spells and minions can be enabled from the deck selection menu(all targeting cards will target the enemy hero).")
         set_text_newline("")
         set_text_newline("The bot will attempt to restart the game if it closes or disconnects.")
         set_text_newline("")
@@ -316,6 +337,7 @@ class App(Frame):
         optionsmenu.add_command(label="Custom Decks", command=self.select_decks_to_use)
         optionsmenu.add_command(label="Gameplay", command=self.misc)
         optionsmenu.add_command(label="Controls", command=self.controls)
+        optionsmenu.add_command(label="Resolution", command=self.resolutions)
         optionsmenu.add_separator()
         optionsmenu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="Options", menu=optionsmenu)
