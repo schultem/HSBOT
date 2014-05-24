@@ -226,24 +226,19 @@ def closest_ratio(r_input,r_output):
     return r_input
 
 #Move game window to 0,0 and update it to represent the the clients desired resolution
-def reset_game_window(update_size=True):
+def reset_game_window():
     logging.info("[ENTER] reset_game_window")
     title="Hearthstone"
     game_whndl =  get_whndl(title)
     if game_whndl != None and game_whndl != 0:
         win32gui.ShowWindow(game_whndl, win32con.SW_RESTORE)
         foreground_whndl(game_whndl)
-        if update_size:
-            client_box              = get_client_box(title)
-            defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
-            defines.game_screen_res = closest_ratio(defines.game_screen_res,16/9.)
-            win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
-        else:
-            window_box = win32gui.GetWindowRect(game_whndl)
-            defines.game_screen_res = [window_box[2]-window_box[0],window_box[3]-window_box[1]]
-            win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res[0],defines.game_screen_res[1],True)
+        client_box              = get_client_box(title)
+        #defines.game_screen_res = [client_box[2]-client_box[0],client_box[3]-client_box[1]]
+        #defines.game_screen_res = closest_ratio(defines.game_screen_res,16/9.)
+        win32gui.MoveWindow(game_whndl,0,0,defines.game_screen_res_list[defines.GAME_SCREEN_RES][0],defines.game_screen_res_list[defines.GAME_SCREEN_RES][1],True)
 
-        defines.origin          = [0,0]#explicitly updated to (0,0) in MoveWindow
+        defines.origin = [0,0]#explicitly updated to (0,0) in MoveWindow
 
 def restart_game():
     logging.info("[ENTER] restart_game")
@@ -252,7 +247,7 @@ def restart_game():
         win32gui.ShowWindow(whndl, win32con.SW_RESTORE)
         foreground_whndl(whndl)
         pause_pensively(1)
-        reset_game_window(update_size=False)
+        reset_game_window()
     else:
         whndl_error = get_whndl("Battle.net Error")
         if whndl_error == None or whndl_error == 0:
@@ -260,6 +255,7 @@ def restart_game():
             if whndl != None and whndl != 0:
                 #Maximize battlenet to full screen resolution and scale defines respectively
                 defines.game_screen_res=defines.screen_box[2:]
+                defines.window_box=defines.screen_box[2:]
 
                 #prepare battlenet window for input
                 win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
