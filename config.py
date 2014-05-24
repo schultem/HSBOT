@@ -12,6 +12,7 @@ def save_config():
     f.write( 'MOUSE_SPEED           = ' + str(int(defines.MOUSE_SPEED))    + '\n' )
     f.write( 'START_HOUR            = ' + str(int(defines.START_HOUR))     + '\n' )
     f.write( 'STOP_HOUR             = ' + str(int(defines.STOP_HOUR))      + '\n' )
+    f.write( 'GAME_SCREEN_RES       = ' + str(int(defines.GAME_SCREEN_RES))+ '\n' )
     f.close()
 
 def load_config():
@@ -75,5 +76,14 @@ def load_config():
         else:
             total_ch+=''
     defines.STOP_HOUR  = int(total_ch)
+
+    chars = config_file.readline()
+    total_ch=''
+    for ch in chars:
+        if ch.isdigit():
+            total_ch+=ch
+        else:
+            total_ch+=''
+    defines.GAME_SCREEN_RES  = int(total_ch)
 
     config_file.close()
