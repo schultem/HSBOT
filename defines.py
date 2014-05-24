@@ -10,13 +10,31 @@ from pairconvert import convert
 #game_screen_res = [1366,768]
 #game_screen_res = [854,480]
 game_screen_res = [1920,1080]
+game_screen_res_list = [[1920,1080],
+                        [1366,768],
+                        [1280,720]
+                       ]
 origin          = [0,0]
 screen_box      = (origin[0],origin[1],game_screen_res[0],game_screen_res[1])
 
 ref_game_screen_res       = [1920,1080] #Scale mouse and info coords relative to this reference.
+ref_game_screen_res_list = [[1920,1080],
+                            [1920,1080],
+                            [1920,1080]
+                           ]
 ref_origin                = [0,0]       #reference origin
 neutral                   = [1284,894]  #nothing
 neutral_minion            = [910,705]  #nothing while attacking with minions
+
+#scale coords or boxs by the res to reference ratio, use with pair_convert and add origin offset
+#def ref(x):
+#    conv_ratio_ref  = ref_game_screen_res
+#    conv_ratio      = game_screen_res
+#
+#    if isinstance(x,list):#2 list
+#        return [int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1]]
+#    if isinstance(x,tuple):#4 tuple
+#        return (int(x[0]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[1]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1],int(x[2]*float(conv_ratio[0])/float(conv_ratio_ref[0]))+origin[0],int(x[3]*float(conv_ratio[1])/float(conv_ratio_ref[1]))+origin[1])
 
 #scale coords or boxs by the res to reference ratio, use with pair_convert and add origin offset
 def ref(x):
@@ -69,7 +87,8 @@ player_ability            = [1132,826]
 player_deck               = [1622,650]
 opponent_deck             = [1622,335]
 opponent_hand             = [1010,73]
-error                     = [957,576]
+error_1                   = [957,576]
+error_2                   = [957,600]
 play_card                 = [[400,600],[960,600],[900,600],[1000,600],[1470,600]]
 bnet_games_button         = [173,46]
 bnet_hearthstone_button   = [55,425]
@@ -129,16 +148,17 @@ state_box =[(0,1037,1920,1080),   #deskop
 #0 1 2
 #3 4 5 
 #6 7 8
-DECKS_TO_USE   = [0,1,2,3,4,5,6,7,8]
-REROLL_QUESTS  = True
-MULLIGAN       = True
-RANDOM_ATTACKS = True
-PLAY_RANKED    = True
-USE_MOUSE      = True
-MOUSE_SPEED    = 5
-START_HOUR     = 0
-START_HOUR     = 0
-TARGETING      = [0,0,0,0,0,0,0,0,0]
+DECKS_TO_USE    = [0,1,2,3,4,5,6,7,8]
+REROLL_QUESTS   = True
+MULLIGAN        = True
+RANDOM_ATTACKS  = True
+PLAY_RANKED     = True
+USE_MOUSE       = True
+MOUSE_SPEED     = 5
+START_HOUR      = 0
+START_HOUR      = 0
+TARGETING       = [0,0,0,0,0,0,0,0,0]
+GAME_SCREEN_RES = 1
 
 class Target:
     NONE, OPPONENT_HERO = range(0,2)
