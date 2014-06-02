@@ -8,6 +8,7 @@ def save_config():
     f.write( 'MULLIGAN              = ' + str(int(defines.MULLIGAN))       + '\n' )
     f.write( 'RANDOM_ATTACKS        = ' + str(int(defines.RANDOM_ATTACKS)) + '\n' )
     f.write( 'USE_MOUSE             = ' + str(int(defines.USE_MOUSE))      + '\n' )
+    f.write( 'PLAY_PRACTICE         = ' + str(int(defines.PLAY_PRACTICE))  + '\n' )
     f.write( 'PLAY_RANKED           = ' + str(int(defines.PLAY_RANKED))    + '\n' )
     f.write( 'MOUSE_SPEED           = ' + str(int(defines.MOUSE_SPEED))    + '\n' )
     f.write( 'START_HOUR            = ' + str(int(defines.START_HOUR))     + '\n' )
@@ -48,6 +49,11 @@ def load_config():
     for ch in chars:
         if ch.isdigit():
             defines.USE_MOUSE  = int(ch)
+
+    chars = config_file.readline()
+    for ch in chars:
+        if ch.isdigit():
+            defines.PLAY_PRACTICE  = int(ch)
 
     chars = config_file.readline()
     for ch in chars:
