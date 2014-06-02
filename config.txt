@@ -1,11 +1,12 @@
-DECKS_TO_USE          = [1, 2, 5]
+DECKS_TO_USE          = []
 TARGETING             = [0, 1, 0, 0, 1, 1, 1, 0, 0]
 REROLL_QUESTS         = 1
 MULLIGAN              = 1
 RANDOM_ATTACKS        = 0
 USE_MOUSE             = 1
+PLAY_PRACTICE         = 0
 PLAY_RANKED           = 1
 MOUSE_SPEED           = 8
 START_HOUR            = 0
 STOP_HOUR             = 0
-GAME_SCREEN_RES       = 1
+GAME_SCREEN_RES       = 3
