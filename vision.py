@@ -21,6 +21,8 @@ lower_green_cd = cv.Scalar(55, 240, 200)
 upper_green_cd = cv.Scalar(65, 255, 255)
 lower_blue     = cv.Scalar(85, 130, 225)
 upper_blue     = cv.Scalar(95, 140, 255)
+lower_brown    = cv.Scalar(16, 100, 0)
+upper_brown    = cv.Scalar(18, 255, 116)
 lower_red      = cv.Scalar(0,  130, 240)
 upper_red      = cv.Scalar(20, 255, 255)
 lower_red_t    = cv.Scalar(0,  200, 180)
@@ -29,7 +31,7 @@ lower_red_z    = cv.Scalar(0,  50,  100)
 upper_red_z    = cv.Scalar(23, 255, 255)
 lower_red_cd   = cv.Scalar(0,  225, 225)
 upper_red_cd   = cv.Scalar(10, 255, 255)
-lower_white_cd = cv.Scalar(0,  0,   225)
+lower_white_cd = cv.Scalar(0,  0,   155)
 upper_white_cd = cv.Scalar(1,  1,   255)
 lower_white_cd_war  = cv.Scalar(9,   50,   100)
 upper_white_cd_war  = cv.Scalar(12,  57,   255)
@@ -544,7 +546,11 @@ def read_minion_number_data(src,box=None,stage=None):
     im = Image.fromstring("L", cv.GetSize(total_mask), total_mask.tostring())
     
     #ocr
-    text = image_to_string(im)
+    try:
+        text = image_to_string(im)
+    except:
+        text = " "
+        print "Error: tesseract failure"
     #print text
     #remove non numeric chars
     return filtertext(text)
@@ -601,6 +607,26 @@ def read_white_data(src,box):
 
     return filtertext(text)
 
+def read_brown_text(src,box):
+    logging.info("[ENTER] read_brown_text")
+    if box==None:
+        src_box=src
+    else:
+        src_box = src[box[1]:box[3],box[0]:box[2]]
+    hsv = cvtColor(src_box, COLOR_BGR2HSV)
+    #imwrite('hsv.png',hsv)
+    brown_mask       = inRange(hsv,lower_brown, upper_brown)
+    #imwrite('brown_mask.png',brown_mask)
+    src_mask_img = np_to_img(brown_mask)
+
+    im = Image.fromstring("L", cv.GetSize(src_mask_img), src_mask_img.tostring())
+    
+    #ocr
+    text = image_to_string(im)
+
+    return text
+
+
 def read_white_text(src,box):
     logging.info("[ENTER] read_white_text")
     if box==None:
@@ -610,7 +636,7 @@ def read_white_text(src,box):
     hsv = cvtColor(src_box, COLOR_BGR2HSV)
 
     white_mask       = inRange(hsv,lower_white_cd, upper_white_cd)
-
+    #imwrite('white_mask.png',white_mask)
     src_mask_img = np_to_img(white_mask)
 
     im = Image.fromstring("L", cv.GetSize(src_mask_img), src_mask_img.tostring())
