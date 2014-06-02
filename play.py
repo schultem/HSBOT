@@ -40,6 +40,15 @@ class App(Frame):
             self.play_ranked_button.configure(background="#00ff00")
             defines.PLAY_RANKED=True
         save_config()
+        
+    def toggle_play_practice(self):
+        if self.play_practice_button['background'] == "#00ff00":#color is green, so user is disabling
+            self.play_practice_button.configure(background="#ff0000")
+            defines.PLAY_PRACTICE=False
+        else:#color is red, so user is enabling
+            self.play_practice_button.configure(background="#00ff00")
+            defines.PLAY_PRACTICE=True
+        save_config()
 
     def toggle_random_attack(self):
         if self.random_attack_button['background'] == "#00ff00":#color is green, so user is disabling
@@ -188,8 +197,15 @@ class App(Frame):
         else:
             self.play_ranked_button.configure(background="#ff0000")
 
+        self.play_practice_button = Button(self.miscwin, text="Play practice                ",font=self.mediumfont, command=self.toggle_play_practice)
+        self.play_practice_button.grid(row=4,column=1)
+        if defines.PLAY_PRACTICE:
+            self.play_practice_button.configure(background="#00ff00")
+        else:
+            self.play_practice_button.configure(background="#ff0000")
+
         self.random_attack_button = Button(self.miscwin, text="Attack taunts randomly",font=self.mediumfont, command=self.toggle_random_attack)
-        self.random_attack_button.grid(row=4,column=1)
+        self.random_attack_button.grid(row=5,column=1)
         if defines.RANDOM_ATTACKS:
             self.random_attack_button.configure(background="#00ff00")
         else:
@@ -284,7 +300,7 @@ class App(Frame):
         # create a Text widget
         self.txt = Text(txt_frm, borderwidth=3, relief="sunken")
         self.txt.config(font=("consolas", 12), undo=True, wrap='word')
-        set_text_newline("Build 5/22/2014")
+        set_text_newline("Build 6/1/2014 Version 2.0")
         set_text_newline("")
         set_text_newline("This is a Hearthstone color bot that takes screenshots of the game window and uses computer vision (sift and color masking) to find playable cards, use the character ability, and to attack with minions.")
         set_text_newline("")
@@ -305,12 +321,18 @@ class App(Frame):
         set_text_newline("Gameplay:")
         set_text_newline("  -Reroll 40 gold quests: Check once per hour for new quests and reroll if they are for 40 gold")
         set_text_newline("  -Mulligan cards: If 3 cards, mulligan 4+ cost, if 4 cards mulligan 1 and 5+ cost.  This is to try to make better use of the coin on the first turn.")
+        set_text_newline("  -Play ranked: Will select to play casual or ranked in Play mode.  This does nothing in practice mode")
+        set_text_newline("  -Play practice: Play in practice mode (green) or Play mode (red)")
         set_text_newline("  -Attack randomly: If this is red (off) the feature will attempt to read the values on all minions and attack enemy taunts using the minimum resources.")
+        set_text_newline("     NOTE: Currently for 4:3 resolutions this does not work and is disabled for those resolutions.")
         set_text_newline("")
         set_text_newline("Control options:")
         set_text_newline("  -Mouse speed: Increase or decrease the mouse speed")
         set_text_newline("  -Hour to start: Have the bot wait until a certain time to start, 1-24 military time (24=12am). Set the time, then press start, the bot will display what system time it is waiting until. 0 to disable")
         set_text_newline("  -Hour to stop: Have the bot pause when it reaches a certain time of day, 1-24 military time (24=12am). 0 to disable.  If Hour to start is set, it will start again at that time")
+        set_text_newline("")
+        set_text_newline("Resolutions:")
+        set_text_newline("  -Pick the desired resolution to use the game window in.")
         set_text_newline("")
         set_text_newline("Options are saved to a config file.")
         set_text_newline("")
