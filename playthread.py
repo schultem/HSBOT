@@ -367,16 +367,16 @@ def player():
     #logging.info("------PLAY INFO CHECK-------")
     actions.pause_pensively(0.25)
     src = vision.screen_cap()
+    state_name = vision.get_state_sift(src,state_descs)
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
-    if (player_cards==[] and player_ability ==[] and player_minions ==[] and player_attack ==[]) or player_cards==None or player_ability == None or player_minions == None or player_attack==None and control_success:
+    if (player_cards==[] and player_ability ==[] and player_minions ==[] and player_attack ==[]) or player_cards==None or player_ability == None or player_minions == None or player_attack==None and control_success and (state_name == defines.State.PLAYER or state_name == defines.State.OPPONENT or state_name == defines.State.PLAYER_GREEN):
         #logging.info("---END TURN---")
         control_success=actions.move_and_leftclick(c(defines.neutral))
         player_turn_green_check = vision.color_range_reduced_mids(src,c(defines.turn_box),color='green')
         if player_turn_green_check !=[] and player_turn_green_check != None and control_success:
-            control_success=actions.move_and_leftclick(c(defines.turn_button))
             control_success=actions.move_and_leftclick(c(defines.turn_button))
             control_success=actions.move_and_leftclick(c(defines.neutral))
         else:
@@ -406,11 +406,12 @@ def player_end():
     logging.info("[ENTER] player_end")
     control_success=actions.move_and_leftclick(c(defines.neutral))
     src = vision.screen_cap()
+    state_name = vision.get_state_sift(src,state_descs)
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=37,max_threshold=200)
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
-    if (player_cards==[] and player_ability ==[] and player_minions ==[] and player_attack ==[]) and control_success:
+    if player_cards==[] and player_ability ==[] and player_minions ==[] and player_attack ==[] and control_success and (state_name == defines.State.PLAYER or state_name == defines.State.OPPONENT or state_name == defines.State.PLAYER_GREEN):
         #logging.info("---END TURN---")
         control_success=actions.move_and_leftclick(c(defines.turn_button))
         control_success=actions.move_and_leftclick(c(defines.neutral))
