@@ -81,7 +81,7 @@ class App(Frame):
         save_config()
 
     def config_preferences(self):
-        defines.GAME_SCREEN_RES=self.target.get()
+        defines.TARGETING[self.current_deckopt_num]=self.target.get()
         save_config()
         
     def config_resolution(self):
