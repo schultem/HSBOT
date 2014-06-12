@@ -23,6 +23,8 @@ lower_blue     = cv.Scalar(85, 130, 225)
 upper_blue     = cv.Scalar(95, 140, 255)
 lower_brown    = cv.Scalar(16, 100, 0)
 upper_brown    = cv.Scalar(18, 255, 116)
+lower_gold     = cv.Scalar(19, 200, 100)
+upper_gold     = cv.Scalar(27, 255, 255)
 lower_red      = cv.Scalar(0,  130, 240)
 upper_red      = cv.Scalar(20, 255, 255)
 lower_red_t    = cv.Scalar(0,  200, 180)
@@ -482,7 +484,6 @@ def get_taunt_minions(src,taunt_box,pad=-50,min_threshold=20):
     background = resize(background, (foreground.shape[1],foreground.shape[0]))
     
     fg_hsv = cvtColor(foreground, COLOR_BGR2HSV)
-    
     #foreground_green_mask = inRange(fg_hsv,lower_green_z, upper_green_z)
     #kernel = np.ones((5,5),np.uint8)
     #foreground_green_mask = dilate(foreground_green_mask,kernel,iterations = 1)
@@ -492,14 +493,19 @@ def get_taunt_minions(src,taunt_box,pad=-50,min_threshold=20):
     kernel = np.ones((1,1),np.uint8)
     foreground_red_mask = dilate(foreground_red_mask,kernel,iterations = 1)
     bitwise_not(foreground_red_mask, foreground_red_mask)
-    
+
+    foreground_gold_mask = inRange(fg_hsv,lower_gold, upper_gold)
+    kernel = np.ones((5,5),np.uint8)
+    foreground_gold_mask = dilate(foreground_gold_mask,kernel,iterations = 1)
+
     fgbg = BackgroundSubtractorMOG()
     fgmask = fgbg.apply(background)
     fgmask = fgbg.apply(foreground)
     
     #fgmask = bitwise_and(foreground_green_mask, fgmask)
     fgmask = bitwise_and(foreground_red_mask, fgmask)
-    
+    fgmask = bitwise_or(foreground_gold_mask, fgmask)
+
     kernel = np.ones((5,5),np.uint8)
     fgmask = morphologyEx(fgmask, MORPH_CLOSE, kernel)
     
