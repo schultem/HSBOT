@@ -66,7 +66,11 @@ def play():
     if 'Play' in data:
         if defines.PLAY_PRACTICE:
             control_success=actions.move_and_leftclick(c(defines.play_back_button))
-            actions.pause_pensively(2)
+            actions.pause_pensively(1)            
+            control_success=actions.move_and_leftclick(c(defines.play_back_button))
+            actions.pause_pensively(1)
+            control_success=actions.move_and_leftclick(c(defines.play_back_button))
+            actions.pause_pensively(1)
         else:
             if len(defines.DECKS_TO_USE):
                 control_success=actions.move_and_leftclick(c(defines.custom_decks_arrow))
@@ -78,7 +82,12 @@ def play():
                 control_success=actions.move_and_leftclick(c(defines.deck_locations[current_decknum]))
                 control_success=actions.move_and_leftclick(c(defines.play_button))
                 actions.pause_pensively(0.5)
-    elif 'Practice' in data:
+    elif 'Practice' in data or 'Adventure' in data or 'Naxxramas' in data:
+        control_success=actions.move_and_leftclick(c(defines.adventure_practice_button))
+        actions.pause_pensively(1)
+        control_success=actions.move_and_leftclick(c(defines.play_button))
+        actions.pause_pensively(1)
+
         if len(defines.DECKS_TO_USE):
             control_success=actions.move_and_leftclick(c(defines.custom_decks_arrow))
             current_decknum=defines.DECKS_TO_USE[randint(0,len(defines.DECKS_TO_USE)-1)]
@@ -161,7 +170,10 @@ def player():
             stage=None
 
     #logging.info("------PLAY CARDS------")
-    player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
+    player_cards         = vision.get_playable_cards(src,c(defines.hand_box))
+    player_cards_combo   = vision.get_playable_cards(src,c(defines.hand_box),color='yellow')
+    if player_cards_combo:#active combo cards are played before non-combo cards
+        player_cards=player_cards_combo
     while player_cards and control_success:
         if current_decknum != None:
             if defines.TARGETING[current_decknum]:
@@ -187,7 +199,11 @@ def player():
         control_success=actions.move_and_rightclick(c(defines.neutral_minion))
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
-        player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
+        player_cards         = vision.get_playable_cards(src,c(defines.hand_box))
+        player_cards_combo   = vision.get_playable_cards(src,c(defines.hand_box),color='yellow')
+        if player_cards_combo:#active combo cards are played before non-combo cards
+            player_cards=player_cards_combo
+
         if not actions.check_game('Hearthstone'):
             break
 
@@ -205,9 +221,9 @@ def player():
         else:
             control_success=actions.move_and_leftclick(c(defines.player_ability))
             control_success=actions.move_and_leftclick(c(defines.neutral_minion))
+            control_success=actions.move_and_rightclick(c(defines.neutral_minion))
         actions.pause_pensively(2)
-
-
+    player_ability=0
     #logging.info("---ATTACK WITH MINIONS---")
     src = vision.screen_cap()
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
@@ -370,6 +386,13 @@ def player():
     state_name = vision.get_state_sift(src,state_descs)
     player_cards   = vision.get_playable_cards(src,c(defines.hand_box))
     player_ability = vision.color_range_reduced_mids(src,c(defines.reduced_ability_box),color='green')
+
+    if player_ability:#player ability still shows up even though we've past that section above, chances are the character is wrong
+        try:
+            player_char=vision.get_image_info_sift(src,character_descs,c(defines.player_box))
+        except:
+            player_char=None
+
     player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
     player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
     if (player_cards==[] and player_ability ==[] and player_minions ==[] and player_attack ==[]) or player_cards==None or player_ability == None or player_minions == None or player_attack==None and control_success and (state_name == defines.State.PLAYER or state_name == defines.State.OPPONENT or state_name == defines.State.PLAYER_GREEN):
@@ -531,7 +554,11 @@ class GameLogicThread(threading.Thread):
                         self.queue.put('checking quests')
                         if self.new_state==defines.State.PLAY:
                             control_success=actions.move_and_leftclick(c(defines.play_back_button))
-                            actions.pause_pensively(2)
+                            actions.pause_pensively(1)            
+                            control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                            actions.pause_pensively(1)
+                            control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                            actions.pause_pensively(1)
                         control_success=actions.move_and_leftclick(c(defines.quest_button))
                         actions.pause_pensively(2)
                         src = vision.screen_cap()
@@ -580,11 +607,14 @@ class GameLogicThread(threading.Thread):
                 current_hour = int(strftime("%X")[:2])
                 if current_hour==0:
                     current_hour=24
-                if defines.START_HOUR==current_hour or defines.START_HOUR==0:
+                modified_stop_hour = defines.STOP_HOUR
+                if defines.START_HOUR>defines.STOP_HOUR:
+                    modified_stop_hour+=24 #STOP_HOUR is desired by the player to be the next day
+                if defines.START_HOUR==current_hour or defines.START_HOUR==0 or defines.START_HOUR < current_hour < modified_stop_hour:
                     wait_for_start_time=False
                 else:
                     self.queue.put("waiting for %s o'clock %s"%(time_to_start,am_or_pm))
-                    actions.pause_pensively(1)
+                    actions.pause_pensively(60)
 
             #check for splash screens
             src = vision.screen_cap()
@@ -592,11 +622,8 @@ class GameLogicThread(threading.Thread):
 
             if match_coord_next != [0,0]:
                 brown_box = (match_coord_next[0]-50,match_coord_next[1]-40,match_coord_next[0]+50,match_coord_next[1]+40)
-                #print brown_box
                 data = vision.read_brown_text(src,brown_box)
-                #print data
-                #print match_coord_next
-                if 'Next' in data:
+                if 'Next' in data or 'Done' in data:
                     control_success=actions.move_and_leftclick(match_coord_next)
                     self.queue.put('splash screen')
                     actions.pause_pensively(2)
