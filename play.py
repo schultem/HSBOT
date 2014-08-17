@@ -300,7 +300,7 @@ class App(Frame):
         # create a Text widget
         self.txt = Text(txt_frm, borderwidth=3, relief="sunken")
         self.txt.config(font=("consolas", 12), undo=True, wrap='word')
-        set_text_newline("Build 6/1/2014 Version 2.0")
+        set_text_newline("Build 8/16/2014 Version 2.1")
         set_text_newline("")
         set_text_newline("This is a Hearthstone color bot that takes screenshots of the game window and uses computer vision (sift and color masking) to find playable cards, use the character ability, and to attack with minions.")
         set_text_newline("")
