@@ -15,6 +15,8 @@ import logging
 #suffix _t is for targeting arrow color
 lower_green    = cv.Scalar(45, 100, 200)
 upper_green    = cv.Scalar(80, 255, 255)
+lower_yellow   = cv.Scalar(29, 50, 200)
+upper_yellow   = cv.Scalar(31, 255, 255)
 lower_green_z  = cv.Scalar(20, 50,  100)
 upper_green_z  = cv.Scalar(70, 255, 255)
 lower_green_cd = cv.Scalar(55, 240, 200)
@@ -379,13 +381,18 @@ def horizontal_edges(image,x=None):
     
     return rising_edges,falling_edges
 
-def get_playable_cards(src,box,pad=20):
+def get_playable_cards(src,box,pad=20,color='green'):
     logging.info("[ENTER] get_playable_cards")
     src_box = src[box[1]:box[3],box[0]:box[2]]
     gray = cvtColor(src_box,COLOR_BGR2GRAY)
     result = inRange(gray,0, 0)
     hsv1 = cvtColor(src_box, COLOR_BGR2HSV)
-    mask = inRange(hsv1,lower_green, upper_green)
+    if color=='green':
+        mask = inRange(hsv1,lower_green, upper_green)
+    elif color=='yellow':
+        mask = inRange(hsv1,lower_yellow, upper_yellow)
+        kernel = np.ones((5,5),np.uint8)
+        mask = dilate(mask,kernel,iterations = 2)
 
     _,falling_edges = vertical_edges(mask)
     falling_edges = [[x+box[0]+pad,y+box[1]] for [x,y] in falling_edges]#translate coords to full screen coords rather than box coords
