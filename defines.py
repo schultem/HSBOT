@@ -106,6 +106,7 @@ main_screen_splash        = [975,760]
 ranked_button             = [1500,190]
 casual_button             = [1300,190]
 nuetral_targeting         = [680,770]
+adventure_practice_button = [1385,133]
 
 ############
 # INFO BOX #
@@ -250,6 +251,7 @@ def set_defines():
         ranked_button             = [1200,210]
         casual_button             = [1000,210]
         nuetral_targeting         = [439,735]
+        adventure_practice_button = [1095,135]
 
         quest_box_1                 = (440,840,510,898)
         quest_box_2                 = (670,840,730,898)
@@ -340,7 +342,8 @@ def set_defines():
         ranked_button             = [1500,190]
         casual_button             = [1300,190]
         nuetral_targeting         = [680,770]
-
+        adventure_practice_button = [1385,133]
+        
         quest_box_1                 = (680,885,750,920)
         quest_box_2                 = (930,885,994,920)
         quest_box_3                 = (1170,885,1236,920)
