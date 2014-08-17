@@ -251,7 +251,24 @@ def restart_game():
     else:
         whndl_error = get_whndl("Battle.net Error")
         if whndl_error == None or whndl_error == 0:
-            whndl  = get_whndl("Battle.net")
+            if get_hwnds().count('Battle.net') > 1:#client wants to restart
+                whndl  = get_whndl("Battle.net")
+                #prepare battlenet window for input
+                win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
+                foreground_whndl(whndl)
+                pycwnd = make_pycwnd(whndl)
+                pause_pensively(2)
+
+                src = vision.screen_cap()
+                bnet_restart_img = vision.imread('images//bnet//bnet_restart.png')
+                _, match_coord_restart  =  vision.calc_sift(src,bnet_restart_img,ratio=0.1)
+
+                move_and_leftclick(match_coord_restart,pycwnd)
+                whndl = 0
+                pause_pensively(15)
+            else:
+                whndl  = get_whndl("Battle.net")
+
             if whndl != None and whndl != 0:
                 #Maximize battlenet to full screen resolution and scale defines respectively
                 defines.game_screen_res=defines.screen_box[2:]
@@ -313,6 +330,16 @@ def restart_game():
             pycwnd_error = make_pycwnd(whndl_error)
             pycwnd_click(pycwnd_error,defines.bnet_launch_error_button)
 
+#return a list of all window titles
+def get_hwnds():
+  def callback (hwnd, hwnds):
+    hwnds.append(win32gui.GetWindowText(hwnd))
+    return True
+
+  hwnds = []
+  win32gui.EnumWindows(callback, hwnds)
+  return hwnds
+  
 def main():
     pass
 
