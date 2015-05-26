@@ -312,11 +312,11 @@ def set_defines():
                                     8:[950,750],
                                     }
         play_button               = [1400,890]
-        play_back_button          = [1587,994]
+        play_back_button          = [1550,994]
         quest_button              = [534,950]
-        reroll_quest_button_1     = [805,785]
-        reroll_quest_button_2     = [1050,785]
-        reroll_quest_button_3     = [1290,785]
+        reroll_quest_button_1     = [805,780]
+        reroll_quest_button_2     = [1050,780]
+        reroll_quest_button_3     = [1290,780]
         
         starting_hand_costs_4     = [(459,350,515,400),(714,350,775,400),(965,350,1030,400),(1224,350,1284,400)]
         starting_hand_costs_3     = [(490,350,555,400),(835,350,900,400),(1180,350,1240,400)]

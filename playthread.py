@@ -2,10 +2,11 @@ import vision
 import actions
 import defines
 import logging
-from random import randint
+from random import randint,randrange
 import os
 import threading
 import Queue
+import numpy
 from countdict import countdict
 from time import strftime, localtime
 from itertools import combinations
@@ -14,20 +15,25 @@ from itertools import combinations
 #Store screen captures
 src = None
 
-#pre-calulate sift descriptors
+#pre-calculate sift descriptors
 state_descs     = vision.get_descs(os.getcwd()+ '\\images\\state\\')
 character_descs = vision.get_descs(os.getcwd()+ '\\images\\character\\')
 stage_descs     = vision.get_descs(os.getcwd()+ '\\images\\stage\\')
 opponent_char=None
 player_char=None
 stage=None
-current_decknum=None
+current_decknum=0
 
 #get monitor resolution
 monitor_x=actions.win32api.GetSystemMetrics(0)
 monitor_y=actions.win32api.GetSystemMetrics(1)
 defines.screen_box = (0,0,monitor_x,monitor_y)
 
+def normalize(num_list):
+    return [float(i)/sum(num_list) for i in num_list]
+
+def weighted_randint(int_range):
+    return numpy.random.choice(range(int_range), 1, p=normalize([(1.0/(2+idx)) for idx in range(int_range)]))[0]
 #Shorter binding for the coord resolution convert function
 def c(var):
     return defines.convert(var,defines.ref)
@@ -143,6 +149,7 @@ def select():
     control_success=actions.move_and_leftclick(c(defines.confirm_hand_button))
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def wait():
+    actions.move_cursor([randint(defines.origin[0],defines.game_screen_res[0]), randint(defines.origin[1],defines.game_screen_res[1])])
     logging.info("[ENTER] wait")
 def player():
     global src
@@ -169,33 +176,57 @@ def player():
         except:
             stage=None
 
+    #logging.info("---ATTACK WITH CHARACTER---")
+    actions.pause_pensively(0.25)
+    src = vision.screen_cap()
+    player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
+    if player_attack and control_success:
+        control_success=actions.move_and_leftclick(c(defines.neutral_minion))
+        control_success=actions.move_and_leftclick(c(defines.player_hero))
+        #actions.move_cursor([player_attack[0][0],player_attack[0][1]+10])
+        actions.pause_pensively(0.1)
+        src = vision.screen_cap()
+        enemy=[]
+        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
+        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
+        enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
+        if enemy_minions:
+            e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
+
+        if enemy_minions:
+            control_success=actions.move_and_leftclick(enemy_minions[e_m])
+        elif enemy:
+            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
+        else:
+            #something's wrong, try to attack any minion
+            actions.pause_pensively(6)
+            enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
+            if enemy_minions:
+                control_success=actions.move_and_leftclick(enemy_minions[0])
+        control_success=actions.move_and_leftclick(c(defines.neutral))
+
     #logging.info("------PLAY CARDS------")
     player_cards         = vision.get_playable_cards(src,c(defines.hand_box))
     player_cards_combo   = vision.get_playable_cards(src,c(defines.hand_box),color='yellow')
-    if player_cards_combo:#active combo cards are played before non-combo cards
+    if player_cards_combo and player_char == 'rogue':#active combo cards are played before non-combo cards
         player_cards=player_cards_combo
     while player_cards and control_success:
-        if current_decknum != None:
-            if defines.TARGETING[current_decknum]:
-                control_success=actions.move_and_leftclick(player_cards[0])
-                actions.move_cursor(c(defines.nuetral_targeting))
-                src = vision.screen_cap()
-                targeting = vision.color_range_reduced_mids(src,c(defines.nuetral_targeting_box),color='red_targeting')
-                if targeting:
-                    if defines.TARGETING[current_decknum]==defines.Target.OPPONENT_HERO:
-                        control_success=actions.move_and_leftclick(c(defines.opponent_hero))
+        control_success=actions.move_and_leftclick(player_cards[weighted_randint(len(player_cards))])
+        actions.move_cursor(c(defines.nuetral_targeting))
+        src = vision.screen_cap()
+        targeting = vision.color_range_reduced_mids(src,c(defines.nuetral_targeting_box),color='red_targeting')
+        if targeting:
+            if defines.TARGETING[current_decknum]==defines.Target.OPPONENT_HERO:
+                control_success=actions.move_and_leftclick(c(defines.opponent_hero))
+        if defines.TARGETING[current_decknum]==defines.Target.OPPONENT_HERO:
+            actions.move_and_leftclick(c(defines.play_card[randint(0,len(defines.play_card)-1)]))
+            actions.move_cursor(c(defines.nuetral_targeting))
+            src = vision.screen_cap()
+            targeting = vision.color_range_reduced_mids(src,c(defines.nuetral_targeting_box),color='red_targeting')
+            if targeting:
                 if defines.TARGETING[current_decknum]==defines.Target.OPPONENT_HERO:
-                    actions.move_and_leftclick(c(defines.play_card[randint(0,len(defines.play_card)-1)]))
-                    actions.move_cursor(c(defines.nuetral_targeting))
-                    src = vision.screen_cap()
-                    targeting = vision.color_range_reduced_mids(src,c(defines.nuetral_targeting_box),color='red_targeting')
-                    if targeting:
-                        if defines.TARGETING[current_decknum]==defines.Target.OPPONENT_HERO:
-                            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
-            else:
-                actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,len(defines.play_card)-1)]))
-        else:
-            actions.leftclick_move_and_leftclick(player_cards[0],c(defines.play_card[randint(0,len(defines.play_card)-1)]))
+                    control_success=actions.move_and_leftclick(c(defines.opponent_hero))
+
         control_success=actions.move_and_rightclick(c(defines.neutral_minion))
         actions.pause_pensively(1.5)
         src = vision.screen_cap()
@@ -299,7 +330,10 @@ def player():
                     #print 'Use subset: ',min_subset
         else:
             no_enemy_taunts_detected=True
-            p_m = player_minions[0] #default attack with the leftmost minion if there are no taunts
+            if len(player_minions)>1:
+                p_m = player_minions[randrange(0,len(player_minions)-1)]
+            else:
+                p_m = player_minions[0]
 
         control_success=actions.move_and_leftclick(p_m)
         actions.move_cursor([p_m[0],p_m[1]+int(150*float(defines.game_screen_res[1])/float(defines.ref_game_screen_res[1]))])
@@ -351,35 +385,6 @@ def player():
             break
         player_minions = vision.color_range_reduced_mids(src,c(defines.reduced_player_minions_box),color='green',min_threshold=45,max_threshold=200)
 
-    #logging.info("---ATTACK WITH CHARACTER---")
-    actions.pause_pensively(0.25)
-    src = vision.screen_cap()
-    player_attack  = vision.color_range_reduced_mids(src,c(defines.reduced_player_box),color='green')
-    if player_attack and control_success:
-        control_success=actions.move_and_leftclick(c(defines.neutral_minion))
-        control_success=actions.move_and_leftclick(c(defines.player_hero))
-        #actions.move_cursor([player_attack[0][0],player_attack[0][1]+10])
-        actions.pause_pensively(0.1)
-        src = vision.screen_cap()
-        enemy=[]
-        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box1),color='red'))
-        enemy.extend(vision.color_range_reduced_mids(src,c(defines.reduced_opponent_box2),color='red'))
-        enemy_minions = vision.get_taunt_minions(src,c(defines.enemy_minions_box_taunts))
-        if enemy_minions:
-            e_m = randint(0,len(enemy_minions)-1) #attack a random taunt minion
-
-        if enemy_minions:
-            control_success=actions.move_and_leftclick(enemy_minions[e_m])
-        elif enemy:
-            control_success=actions.move_and_leftclick(c(defines.opponent_hero))
-        else:
-            #something's wrong, try to attack any minion
-            actions.pause_pensively(6)
-            enemy_minions = vision.color_range_reduced_mids(src,c(defines.reduced_enemy_minions_box),color='red')
-            if enemy_minions:
-                control_success=actions.move_and_leftclick(enemy_minions[0])
-        control_success=actions.move_and_leftclick(c(defines.neutral))
-
     #logging.info("------PLAY INFO CHECK-------")
     actions.pause_pensively(0.25)
     src = vision.screen_cap()
@@ -407,6 +412,7 @@ def player():
             player_end()
 
 def opponent():
+    actions.move_cursor([randint(defines.origin[0],defines.game_screen_res[0]), randint(defines.origin[1],defines.game_screen_res[1])])
     logging.info("[ENTER] opponent")
 def victory():
     logging.info("[ENTER] victory")
@@ -420,7 +426,7 @@ def error():
     control_success=actions.move_and_leftclick(c(defines.error_2))
 def rank():
     logging.info("[ENTER] rank")
-    #control_success=actions.move_and_leftclick(c(defines.main_screen_splash))
+    control_success=actions.move_and_leftclick(c(defines.main_screen_splash))
     control_success=actions.move_and_leftclick(c(defines.neutral))
 def player_end():
     global src#,character_descs,stage_descs
@@ -552,15 +558,16 @@ class GameLogicThread(threading.Thread):
                     time_str = strftime("%X", localtime())
                     if int(time_str[:2])!=previous_hour and (self.new_state==defines.State.HOME or self.new_state==defines.State.PLAY) and not self.stopped():
                         self.queue.put('checking quests')
-                        if self.new_state==defines.State.PLAY:
-                            control_success=actions.move_and_leftclick(c(defines.play_back_button))
-                            actions.pause_pensively(1)            
-                            control_success=actions.move_and_leftclick(c(defines.play_back_button))
-                            actions.pause_pensively(1)
-                            control_success=actions.move_and_leftclick(c(defines.play_back_button))
-                            actions.pause_pensively(1)
+
+                        control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                        actions.pause_pensively(3)
+                        control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                        actions.pause_pensively(3)
+                        control_success=actions.move_and_leftclick(c(defines.play_back_button))
+                        actions.pause_pensively(3)
                         control_success=actions.move_and_leftclick(c(defines.quest_button))
-                        actions.pause_pensively(2)
+                        actions.pause_pensively(3)
+                        
                         src = vision.screen_cap()
                         
                         if '40' in vision.read_white_data(src,c(defines.quest_box_1)):
@@ -585,12 +592,12 @@ class GameLogicThread(threading.Thread):
                         wait_count=0
                     else:
                         wait_count+=1
-                
+
                 if self.new_state != defines.State.DESKTOP and not self.stopped():
                     states[self.new_state]()
                 elif self.new_state == defines.State.DESKTOP and not self.stopped():
                     #on the desktop for some reason, try to start the game or reshow the window if it's already running
-                    actions.pause_pensively(5)
+                    actions.pause_pensively(1)
                     if not self.stopped():
                         actions.restart_game()
                         update_resolutions()
@@ -614,6 +621,9 @@ class GameLogicThread(threading.Thread):
                     wait_for_start_time=False
                 else:
                     self.queue.put("waiting for %s o'clock %s"%(time_to_start,am_or_pm))
+                    if actions.game_running("Hearthstone") == True:
+                        actions.close_game_window("Hearthstone")
+
                     actions.pause_pensively(60)
 
             #check for splash screens

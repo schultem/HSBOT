@@ -3,6 +3,7 @@ import time
 import defines
 import vision
 import logging
+import random
 #logging.basicConfig(filename='game.txt',level=logging.DEBUG)
 
 def leftClick(click=True,coords=False,pycmdwnd=False):
@@ -57,6 +58,8 @@ def getCursorPos():
 
 def interpCursorPos(coord):
     logging.info("[ENTER] interpCursorPos")
+    coord[0]+=random.randrange(-3, 3)#randomize the coordinate a bit
+    coord[1]+=random.randrange(-3, 3)
     coord_curr = getCursorPos()
     newpos  = coord_curr
     while(coord_curr[0]!=coord[0] or coord_curr[1]!=coord[1]):        
@@ -85,14 +88,9 @@ def interpCursorPos(coord):
 
 def pause_pensively(s):
     logging.info("[ENTER] pause_pensively")
-    time.sleep(s)
+    ratio = random.randrange(-25, 25)/100. #25 percent random difference
+    time.sleep(s+s*ratio)
 
-#def leftclick_drag_and_release(click_coord, release_coord):
-#    success = True
-#    success = interpCursorPos(click_coord)
-#    leftDown(success)
-#    success = interpCursorPos(release_coord)
-#    leftUp(success)
 
 def leftclick_move_and_leftclick(click_coord, click_coord_2):
     logging.info("[ENTER] leftclick_move_and_leftclick")
@@ -192,6 +190,14 @@ def check_game(title):
         if f_whndl == whndl:
             return True
     return False
+    
+#Return True if game is running.  Otherwise False
+def game_running(title):
+    logging.info("[ENTER] check_game")
+    whndl =  get_whndl(title)
+    if whndl != None and whndl != 0:
+        return True
+    return False
 
 def get_client_box(title):
     logging.info("[ENTER] get_client_box")
@@ -240,10 +246,16 @@ def reset_game_window():
 
         defines.origin = [0,0]#explicitly updated to (0,0) in MoveWindow
 
+def close_game_window(title):
+    logging.info("[ENTER] close_game_window")
+    whndl =  get_whndl(title)
+    win32gui.PostMessage(whndl, win32con.WM_CLOSE, 0, 0)
+
 def restart_game():
     logging.info("[ENTER] restart_game")
     whndl =  get_whndl("Hearthstone")
     if whndl != None and whndl != 0:
+        #print 'got whndl Hearthstone'
         win32gui.ShowWindow(whndl, win32con.SW_RESTORE)
         foreground_whndl(whndl)
         pause_pensively(1)
@@ -251,25 +263,21 @@ def restart_game():
     else:
         whndl_error = get_whndl("Battle.net Error")
         if whndl_error == None or whndl_error == 0:
-            if get_hwnds().count('Battle.net') > 1:#client wants to restart
-                whndl  = get_whndl("Battle.net")
-                #prepare battlenet window for input
-                win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
-                foreground_whndl(whndl)
-                pycwnd = make_pycwnd(whndl)
-                pause_pensively(2)
-
-                src = vision.screen_cap()
-                bnet_restart_img = vision.imread('images//bnet//bnet_restart.png')
-                _, match_coord_restart  =  vision.calc_sift(src,bnet_restart_img,ratio=0.1)
-
-                move_and_leftclick(match_coord_restart,pycwnd)
-                whndl = 0
-                pause_pensively(15)
-            else:
-                whndl  = get_whndl("Battle.net")
+            #if get_hwnds().count('Battle.net') > 1:#client wants to restart
+            #    #print 'got multiple whndl Battle.net'
+            #    whndl  = get_whndl("Battle.net")
+            #    #prepare battlenet window for input
+            #    win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
+            #    foreground_whndl(whndl)
+            #    pause_pensively(30)
+            #
+            #    whndl = 0
+            #else:
+                #print 'got whndl Battle.net'
+            whndl = get_whndl("Battle.net")
 
             if whndl != None and whndl != 0:
+                #print 'got a whndl'
                 #Maximize battlenet to full screen resolution and scale defines respectively
                 defines.game_screen_res=defines.screen_box[2:]
                 defines.window_box=defines.screen_box[2:]
@@ -277,41 +285,16 @@ def restart_game():
                 #prepare battlenet window for input
                 win32gui.ShowWindow(whndl, win32con.SW_MAXIMIZE)
                 foreground_whndl(whndl)
-                pycwnd = make_pycwnd(whndl)
-            
-                #try to log on again
-                src = vision.screen_cap()
-                bnet_online_img = vision.imread('images//bnet//bnet_online.png')
-                _, match_coord_online =  vision.calc_sift(src,bnet_online_img,ratio=0.2)
-                move_and_leftclick(match_coord_online,pycmdwnd=pycwnd)
-                #pycwnd_click(pycwnd,defines.c(defines.bnet_go_online_button))
-                whndl_login = get_whndl("Battle.net Login")
-                if whndl_login:
-                    #prepare battlenet login window for input
-                    #pw_file = open("pw.txt")
-                    #pw=pw_file.readline()
-                    #pw_file.close()
-                    pycwnd_login = make_pycwnd(whndl_login)
-                    #pycwnd_string(pycwnd_login,pw)
-                    pycwnd_click(pycwnd_login,defines.bnet_accept_pw_button)
-                    pause_pensively(5)
-            
+                pause_pensively(2)
+
                 #try to start the game
-                src = vision.screen_cap()
-                bnet_games_img    = vision.imread('images//bnet//bnet_games.png')
-                bnet_hsbutton_img = vision.imread('images//bnet//bnet_hsbutton.png')
-                bnet_play_img     = vision.imread('images//bnet//bnet_play.png')
-                _, match_coord_games =  vision.calc_sift(src,bnet_games_img,ratio=0.2)
-                _, match_coord_hs    =  vision.calc_sift(src,bnet_hsbutton_img,ratio=0.2)
-                _, match_coord_play  =  vision.calc_sift(src,bnet_play_img,ratio=0.1)
-                move_and_leftclick(match_coord_games,pycmdwnd=pycwnd)
-                move_and_leftclick(match_coord_hs,pycmdwnd=pycwnd)
-                move_and_leftclick(match_coord_play,pycmdwnd=pycwnd)
-                
-                #pycwnd_click(pycwnd,defines.c(defines.bnet_games_button))
-                #pycwnd_click(pycwnd,defines.c(defines.bnet_hearthstone_button))
-                #pycwnd_click(pycwnd,defines.c(defines.bnet_play_button))
-            
+                match_coord_games =  [170,50]
+                match_coord_hs    =  [60,430]
+                match_coord_play  =  [290,970]
+                move_and_leftclick(match_coord_games)
+                move_and_leftclick(match_coord_hs)
+                move_and_leftclick(match_coord_play)
+
                 #get battlenet out of the way
                 pause_pensively(1)
                 win32gui.ShowWindow(whndl, win32con.SW_MINIMIZE)
@@ -320,11 +303,7 @@ def restart_game():
                 reset_game_window()
 
                 game_whndl =  get_whndl("Hearthstone")
-                if game_whndl != None and game_whndl != 0:
-                    pause_pensively(5)
-                    move_and_leftclick(defines.c(defines.main_screen_splash))
-                    pause_pensively(2)
-                    move_and_leftclick(defines.c(defines.main_screen_splash))
+
         else:
             foreground_whndl(whndl_error)
             pycwnd_error = make_pycwnd(whndl_error)
